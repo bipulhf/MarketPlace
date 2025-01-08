@@ -5,6 +5,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { ShoppingBag, Star, TrendingUp, Truck } from "lucide-react";
 import { useStore } from "@/lib/store";
 import { useRouter } from "next/navigation";
+import { motion } from "framer-motion";
 
 const features = [
   {
@@ -35,7 +36,12 @@ export default function Home() {
   return (
     <div className="flex flex-col min-h-screen">
       {/* Hero Section */}
-      <section className="relative h-[600px] flex items-center justify-center">
+      <motion.section 
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        transition={{ duration: 0.8 }}
+        className="relative h-[600px] flex items-center justify-center"
+      >
         <div
           className="absolute inset-0 z-0"
           style={{
@@ -47,35 +53,65 @@ export default function Home() {
           <div className="absolute inset-0 bg-black/40" />
         </div>
         <div className="relative z-10 text-center text-white px-4">
-          <h1 className="text-5xl font-bold mb-6">Discover Your Style</h1>
-          <p className="text-xl mb-8 max-w-2xl mx-auto">
+          <motion.h1 
+            initial={{ y: 20, opacity: 0 }}
+            animate={{ y: 0, opacity: 1 }}
+            transition={{ delay: 0.2, duration: 0.8 }}
+            className="text-5xl font-bold mb-6"
+          >
+            Discover Your Style
+          </motion.h1>
+          <motion.p 
+            initial={{ y: 20, opacity: 0 }}
+            animate={{ y: 0, opacity: 1 }}
+            transition={{ delay: 0.4, duration: 0.8 }}
+            className="text-xl mb-8 max-w-2xl mx-auto"
+          >
             Explore our curated collection of premium fashion and accessories.
             Quality meets style in every piece.
-          </p>
-          <Button 
-            size="lg" 
-            className="bg-white text-black hover:bg-gray-100"
-            onClick={() => router.push('/dashboard')}
+          </motion.p>
+          <motion.div
+            initial={{ y: 20, opacity: 0 }}
+            animate={{ y: 0, opacity: 1 }}
+            transition={{ delay: 0.6, duration: 0.8 }}
           >
-            Shop Now <ShoppingBag className="ml-2 h-5 w-5" />
-          </Button>
+            <Button 
+              size="lg" 
+              className="bg-white text-black hover:bg-gray-100"
+              onClick={() => router.push('/dashboard')}
+            >
+              Shop Now <ShoppingBag className="ml-2 h-5 w-5" />
+            </Button>
+          </motion.div>
         </div>
-      </section>
+      </motion.section>
 
       {/* Features Section */}
       <section className="py-16 bg-gray-50">
         <div className="max-w-6xl mx-auto px-4">
           <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
             {features.map((feature, index) => (
-              <Card key={index} className="border-none shadow-lg">
-                <CardContent className="p-6 text-center">
-                  <div className="mb-4 inline-flex p-3 bg-primary/10 rounded-full">
-                    {feature.icon}
-                  </div>
-                  <h3 className="text-lg font-semibold mb-2">{feature.title}</h3>
-                  <p className="text-muted-foreground">{feature.description}</p>
-                </CardContent>
-              </Card>
+              <motion.div
+                key={index}
+                initial={{ y: 50, opacity: 0 }}
+                whileInView={{ y: 0, opacity: 1 }}
+                transition={{ delay: index * 0.2, duration: 0.5 }}
+                viewport={{ once: true }}
+              >
+                <Card className="border-none shadow-lg">
+                  <CardContent className="p-6 text-center">
+                    <motion.div 
+                      className="mb-4 inline-flex p-3 bg-primary/10 rounded-full"
+                      whileHover={{ scale: 1.1 }}
+                      whileTap={{ scale: 0.9 }}
+                    >
+                      {feature.icon}
+                    </motion.div>
+                    <h3 className="text-lg font-semibold mb-2">{feature.title}</h3>
+                    <p className="text-muted-foreground">{feature.description}</p>
+                  </CardContent>
+                </Card>
+              </motion.div>
             ))}
           </div>
         </div>
@@ -83,35 +119,61 @@ export default function Home() {
 
       {/* Featured Products */}
       <section className="py-16">
-        <div className="max-w-6xl mx-auto px-4">
-          <h2 className="text-3xl font-bold text-center mb-12">Featured Products</h2>
+        <motion.div 
+          initial={{ opacity: 0 }}
+          whileInView={{ opacity: 1 }}
+          transition={{ duration: 0.8 }}
+          viewport={{ once: true }}
+          className="max-w-6xl mx-auto px-4"
+        >
+          <motion.h2 
+            initial={{ y: 20, opacity: 0 }}
+            whileInView={{ y: 0, opacity: 1 }}
+            transition={{ duration: 0.5 }}
+            viewport={{ once: true }}
+            className="text-3xl font-bold text-center mb-12"
+          >
+            Featured Products
+          </motion.h2>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-            {featuredProducts.map((product) => (
-              <Card key={product.id} className="overflow-hidden group">
-                <div className="relative aspect-square">
-                  <img
-                    src={product.image}
-                    alt={product.name}
-                    className="object-cover w-full h-full group-hover:scale-105 transition-transform duration-300"
-                  />
-                </div>
-                <CardContent className="p-4">
-                  <h3 className="font-semibold mb-2">{product.name}</h3>
-                  <div className="flex justify-between items-center">
-                    <span className="text-lg font-bold">${product.price}</span>
-                    <Button 
-                      variant="outline" 
-                      size="sm"
-                      onClick={() => {
-                        addToCart(product.id);
-                        router.push('/cart');
-                      }}
-                    >
-                      Add to Cart
-                    </Button>
-                  </div>
-                </CardContent>
-              </Card>
+            {featuredProducts.map((product, index) => (
+              <motion.div
+                key={product.id}
+                initial={{ y: 50, opacity: 0 }}
+                whileInView={{ y: 0, opacity: 1 }}
+                transition={{ delay: index * 0.2, duration: 0.5 }}
+                viewport={{ once: true }}
+              >
+                <Card className="overflow-hidden group">
+                  <motion.div 
+                    className="relative aspect-square"
+                    whileHover={{ scale: 1.05 }}
+                    transition={{ duration: 0.3 }}
+                  >
+                    <img
+                      src={product.image}
+                      alt={product.name}
+                      className="object-cover w-full h-full"
+                    />
+                  </motion.div>
+                  <CardContent className="p-4">
+                    <h3 className="font-semibold mb-2">{product.name}</h3>
+                    <div className="flex justify-between items-center">
+                      <span className="text-lg font-bold">${product.price}</span>
+                      <Button 
+                        variant="outline" 
+                        size="sm"
+                        onClick={() => {
+                          addToCart(product.id);
+                          router.push('/cart');
+                        }}
+                      >
+                        Add to Cart
+                      </Button>
+                    </div>
+                  </CardContent>
+                </Card>
+              </motion.div>
             ))}
           </div>
           <div className="text-center mt-8">
@@ -122,7 +184,7 @@ export default function Home() {
               View All Products
             </Button>
           </div>
-        </div>
+        </motion.div>
       </section>
 
       {/* Newsletter Section */}
