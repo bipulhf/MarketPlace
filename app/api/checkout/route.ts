@@ -1,9 +1,20 @@
 import { NextResponse } from 'next/server';
 import Stripe from 'stripe';
 
+if (!process.env.STRIPE_SECRET_KEY) {
+  throw new Error('STRIPE_SECRET_KEY is not defined');
+}
+
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!);
 
+export const dynamic = 'force-dynamic';
+export const runtime = 'edge';
+
 export async function POST(request: Request) {
+  if (request.method !== 'POST') {
+    return NextResponse.json({ error: 'Method not allowed' }, { status: 405 });
+  }
+
   try {
     const body = await request.json();
     const { items, userId } = body;
