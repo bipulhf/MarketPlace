@@ -7,7 +7,8 @@ import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Plus, Edit, Trash2, Package } from 'lucide-react';
+import { Plus, Edit, Trash2, Package, Loader2 } from 'lucide-react';
+import { getProductImage } from '@/lib/imageUtils';
 import {
   Dialog,
   DialogClose,
@@ -17,32 +18,61 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
 
 export default function SellerDashboard() {
   const [newProduct, setNewProduct] = useState<Partial<Product>>({});
   const [editingProduct, setEditingProduct] = useState<Product | null>(null);
+  const [isLoading, setIsLoading] = useState(false);
   const currentUser = useStore(state => state.currentUser);
   const products = useStore(state => state.products);
   const orders = useStore(state => state.orders);
   const addProduct = useStore(state => state.addProduct);
   const updateProduct = useStore(state => state.updateProduct);
+  const deleteProduct = useStore(state => state.deleteProduct);
   const updateOrderStatus = useStore(state => state.updateOrderStatus);
 
-  const handleAddProduct = () => {
+  const handleAddProduct = async () => {
     if (currentUser && newProduct.name && newProduct.price) {
-      addProduct({
-        ...newProduct,
-        sellerId: currentUser.id,
-        image: 'https://images.unsplash.com/photo-1523275335684-37898b6baf30',
-      } as Omit<Product, 'id'>);
-      setNewProduct({});
+      setIsLoading(true);
+      try {
+        const imageUrl = await getProductImage(newProduct.name);
+        addProduct({
+          ...newProduct,
+          sellerId: currentUser.id,
+          image: imageUrl,
+        } as Omit<Product, 'id'>);
+        setNewProduct({});
+      } catch (error) {
+        console.error('Error adding product:', error);
+      } finally {
+        setIsLoading(false);
+      }
     }
   };
 
-  const handleEditProduct = () => {
+  const handleEditProduct = async () => {
     if (editingProduct && editingProduct.id) {
-      updateProduct(editingProduct.id, editingProduct);
-      setEditingProduct(null);
+      setIsLoading(true);
+      try {
+        const imageUrl = await getProductImage(editingProduct.name);
+        updateProduct(editingProduct.id, { ...editingProduct, image: imageUrl });
+        setEditingProduct(null);
+      } catch (error) {
+        console.error('Error updating product:', error);
+      } finally {
+        setIsLoading(false);
+      }
     }
   };
 
@@ -75,9 +105,13 @@ export default function SellerDashboard() {
               value={newProduct.description || ''}
               onChange={e => setNewProduct({ ...newProduct, description: e.target.value })}
             />
-            <Button onClick={handleAddProduct}>
-              <Plus className="mr-2 h-4 w-4" />
-              Add Product
+            <Button onClick={handleAddProduct} disabled={isLoading}>
+              {isLoading ? (
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+              ) : (
+                <Plus className="mr-2 h-4 w-4" />
+              )}
+              {isLoading ? 'Adding...' : 'Add Product'}
             </Button>
           </div>
         </Card>
@@ -88,10 +122,17 @@ export default function SellerDashboard() {
             .map(product => (
               <Card key={product.id} className="p-4">
                 <div className="flex justify-between items-start">
-                  <div>
-                    <h3 className="font-semibold">{product.name}</h3>
-                    <p className="text-gray-600">${product.price}</p>
-                    <p className="text-sm text-gray-500">{product.description}</p>
+                  <div className="flex gap-4">
+                    <img 
+                      src={product.image} 
+                      alt={product.name}
+                      className="w-24 h-24 object-cover rounded-md"
+                    />
+                    <div>
+                      <h3 className="font-semibold">{product.name}</h3>
+                      <p className="text-gray-600">${product.price}</p>
+                      <p className="text-sm text-gray-500">{product.description}</p>
+                    </div>
                   </div>
                   <div className="space-x-2">
                     <Dialog>
@@ -133,17 +174,42 @@ export default function SellerDashboard() {
                           />
                           <DialogFooter>
                             <DialogClose asChild>
-                              <Button onClick={handleEditProduct}>
-                                Save Changes
+                              <Button onClick={handleEditProduct} disabled={isLoading}>
+                                {isLoading ? (
+                                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                                ) : (
+                                  'Save Changes'
+                                )}
                               </Button>
                             </DialogClose>
                           </DialogFooter>
                         </div>
                       </DialogContent>
                     </Dialog>
-                    <Button variant="destructive" size="icon">
-                      <Trash2 className="h-4 w-4" />
-                    </Button>
+                    <AlertDialog>
+                      <AlertDialogTrigger asChild>
+                        <Button variant="destructive" size="icon">
+                          <Trash2 className="h-4 w-4" />
+                        </Button>
+                      </AlertDialogTrigger>
+                      <AlertDialogContent>
+                        <AlertDialogHeader>
+                          <AlertDialogTitle>Delete Product</AlertDialogTitle>
+                          <AlertDialogDescription>
+                            Are you sure you want to delete "{product.name}"? This action cannot be undone.
+                          </AlertDialogDescription>
+                        </AlertDialogHeader>
+                        <AlertDialogFooter>
+                          <AlertDialogCancel>Cancel</AlertDialogCancel>
+                          <AlertDialogAction
+                            onClick={() => deleteProduct(product.id)}
+                            className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                          >
+                            Delete
+                          </AlertDialogAction>
+                        </AlertDialogFooter>
+                      </AlertDialogContent>
+                    </AlertDialog>
                   </div>
                 </div>
               </Card>
