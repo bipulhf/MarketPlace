@@ -5,17 +5,19 @@ import { Product } from '@/lib/types';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { ShoppingCart } from 'lucide-react';
+import { useRouter } from 'next/navigation';
 
 export default function BuyerDashboard() {
   const products = useStore(state => state.products);
   const addToCart = useStore(state => state.addToCart);
+  const router = useRouter();
 
   return (
     <div>
       <h1 className="text-3xl font-bold mb-8">Available Products</h1>
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
         {products.map((product: Product) => (
-          <Card key={product.id} className="overflow-hidden">
+          <Card key={product.id} className="overflow-hidden" onClick={() => router.push(`/product/${product.id}`)}>
             <img
               src={product.image}
               alt={product.name}
