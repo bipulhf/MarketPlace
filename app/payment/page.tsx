@@ -103,12 +103,12 @@ export default function PaymentPage() {
                 {cartItems.map(item => (
                   <div key={item.productId} className="flex justify-between">
                     <span>{item.name} (x{item.quantity})</span>
-                    <span>${item.total.toFixed(2)}</span>
+                    <span>৳{item.total.toFixed(2)}</span>
                   </div>
                 ))}
                 <div className="border-t pt-4 font-bold flex justify-between">
                   <span>Total</span>
-                  <span>${total.toFixed(2)}</span>
+                  <span>৳{total.toFixed(2)}</span>
                 </div>
               </CardContent>
             </Card>

@@ -148,7 +148,7 @@ export default function ProductPage() {
           <div>
             <h1 className="text-3xl font-bold mb-2">{product.name}</h1>
             <p className="text-2xl font-semibold text-primary">
-              ${product.price.toFixed(2)}
+              ৳{product.price.toFixed(2)}
             </p>
           </div>
 

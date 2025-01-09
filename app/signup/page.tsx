@@ -8,8 +8,9 @@ import { Card, CardHeader, CardContent, CardFooter } from "@/components/ui/card"
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useStore } from "@/lib/store";
-import { UserPlus } from "lucide-react";
+import { UserPlus, Loader2 } from "lucide-react";
 import { UserRole } from "@/lib/types";
+import { randomDelay } from "@/lib/delay";
 
 export default function SignupPage() {
   const [name, setName] = useState("");
@@ -17,17 +18,24 @@ export default function SignupPage() {
   const [password, setPassword] = useState("");
   const [role, setRole] = useState<UserRole>("buyer");
   const [error, setError] = useState("");
+  const [isLoading, setIsLoading] = useState(false);
   const router = useRouter();
   const addUser = useStore((state) => state.addUser);
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError("");
+    setIsLoading(true);
     
-    if (addUser({ name, email, password, role })) {
-      router.push("/login");
-    } else {
-      setError("Email already exists");
+    try {
+      await randomDelay(1000, 2000);
+      if (addUser({ name, email, password, role })) {
+        router.push("/login");
+      } else {
+        setError("Email already exists");
+      }
+    } finally {
+      setIsLoading(false);
     }
   };
 
@@ -52,6 +60,7 @@ export default function SignupPage() {
                 value={name}
                 onChange={(e) => setName(e.target.value)}
                 required
+                disabled={isLoading}
               />
             </div>
             <div>
@@ -61,6 +70,7 @@ export default function SignupPage() {
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 required
+                disabled={isLoading}
               />
             </div>
             <div>
@@ -70,10 +80,15 @@ export default function SignupPage() {
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 required
+                disabled={isLoading}
               />
             </div>
             <div>
-              <Select value={role} onValueChange={(value: UserRole) => setRole(value)}>
+              <Select 
+                value={role} 
+                onValueChange={(value: UserRole) => setRole(value)}
+                disabled={isLoading}
+              >
                 <SelectTrigger>
                   <SelectValue placeholder="Select role" />
                 </SelectTrigger>
@@ -86,8 +101,15 @@ export default function SignupPage() {
             </div>
           </CardContent>
           <CardFooter className="flex flex-col space-y-4">
-            <Button type="submit" className="w-full">
-              Sign up
+            <Button type="submit" className="w-full" disabled={isLoading}>
+              {isLoading ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  Creating account...
+                </>
+              ) : (
+                "Sign up"
+              )}
             </Button>
             <p className="text-center text-sm text-gray-600">
               Already have an account?{" "}

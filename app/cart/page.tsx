@@ -98,7 +98,7 @@ export default function CartPage() {
                 )}
                 <div>
                   <h3 className="font-semibold">{item.product?.name}</h3>
-                  <p className="text-gray-600">${item.product?.price}</p>
+                  <p className="text-gray-600">৳{item.product?.price}</p>
                 </div>
               </motion.div>
               <div className="flex items-center space-x-4">
@@ -126,7 +126,7 @@ export default function CartPage() {
                   className="font-semibold"
                   whileHover={{ scale: 1.1 }}
                 >
-                  ${item.total.toFixed(2)}
+                  ৳{item.total.toFixed(2)}
                 </motion.p>
                 <motion.div
                   whileHover={{ scale: 1.1 }}
@@ -152,7 +152,7 @@ export default function CartPage() {
         className="mt-8 flex justify-between items-center"
       >
         <motion.div whileHover={{ scale: 1.05 }}>
-          <p className="text-xl font-bold">Total: ${total.toFixed(2)}</p>
+          <p className="text-xl font-bold">Total: ৳{total.toFixed(2)}</p>
         </motion.div>
         <motion.div
           whileHover={{ scale: 1.05 }}

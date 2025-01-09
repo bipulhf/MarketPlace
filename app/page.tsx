@@ -11,7 +11,7 @@ const features = [
   {
     icon: <Truck className="h-6 w-6" />,
     title: "Free Shipping",
-    description: "Free shipping on orders over $100",
+    description: "Free shipping on orders over ৳1000",
   },
   {
     icon: <Star className="h-6 w-6" />,

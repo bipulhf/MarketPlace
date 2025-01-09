@@ -130,7 +130,7 @@ export default function SellerDashboard() {
                     />
                     <div>
                       <h3 className="font-semibold">{product.name}</h3>
-                      <p className="text-gray-600">${product.price}</p>
+                      <p className="text-gray-600">৳{product.price}</p>
                       <p className="text-sm text-gray-500">{product.description}</p>
                     </div>
                   </div>
@@ -227,7 +227,7 @@ export default function SellerDashboard() {
                   <p className="text-sm text-gray-500">
                     {new Date(order.createdAt).toLocaleDateString()}
                   </p>
-                  <p className="text-sm text-gray-500">Total: ${order.total}</p>
+                  <p className="text-sm text-gray-500">Total: ৳{order.total}</p>
                 </div>
                 <div>
                   {order.status === 'pending' && (

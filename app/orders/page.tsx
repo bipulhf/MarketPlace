@@ -76,7 +76,7 @@ export default function OrdersPage() {
                           <p className="text-sm text-gray-500">Quantity: {item.quantity}</p>
                         </div>
                       </div>
-                      <p className="font-semibold">${product?.price}</p>
+                      <p className="font-semibold">৳{product?.price}</p>
                     </div>
                   );
                 })}
@@ -84,7 +84,7 @@ export default function OrdersPage() {
               <div className="mt-4 pt-4 border-t">
                 <div className="flex justify-between">
                   <p className="font-bold">Total</p>
-                  <p className="font-bold">${order.total.toFixed(2)}</p>
+                  <p className="font-bold">৳{order.total.toFixed(2)}</p>
                 </div>
               </div>
             </Card>

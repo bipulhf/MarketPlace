@@ -27,7 +27,7 @@ export default function DeliveryDashboard() {
                 <p className="text-sm text-gray-500">
                   {new Date(order.createdAt).toLocaleDateString()}
                 </p>
-                <p className="text-sm text-gray-500">Total: ${order.total}</p>
+                <p className="text-sm text-gray-500">Total: ৳{order.total}</p>
               </div>
               <div>
                 {order.status === 'accepted' && (

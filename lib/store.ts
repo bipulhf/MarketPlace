@@ -99,7 +99,7 @@ export const useStore = create(
         {
           id: 'prod1',
           name: 'Premium Leather Wallet',
-          price: 49.99,
+          price: 4990,
           description: 'Handcrafted genuine leather wallet with multiple card slots',
           sellerId: 'seller1',
           image: 'https://images.unsplash.com/photo-1627123424574-724758594e93?auto=format&fit=crop&q=80&w=600'
@@ -107,7 +107,7 @@ export const useStore = create(
         {
           id: 'prod2',
           name: 'Wireless Earbuds',
-          price: 129.99,
+          price: 12000,
           description: 'High-quality wireless earbuds with noise cancellation',
           sellerId: 'seller1',
           image: 'https://images.unsplash.com/photo-1590658268037-6bf12165a8df?auto=format&fit=crop&q=80&w=600'
@@ -115,7 +115,7 @@ export const useStore = create(
         {
           id: 'prod3',
           name: 'Smart Watch',
-          price: 199.99,
+          price: 10000,
           description: 'Feature-rich smartwatch with health tracking',
           sellerId: 'seller1',
           image: 'https://images.unsplash.com/photo-1546868871-7041f2a55e12?auto=format&fit=crop&q=80&w=600'
