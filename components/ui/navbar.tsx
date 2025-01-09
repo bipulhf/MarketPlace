@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { useStore } from "@/lib/store";
 import { Button } from "./button";
-import { ShoppingBag, User } from "lucide-react";
+import { ShoppingBag, User, Search } from "lucide-react";
 import CartIcon from "../CartIcon";
 
 export function Navbar() {
@@ -32,6 +32,12 @@ export function Navbar() {
             )}
           </div>
           <div className="flex items-center space-x-4">
+            <Link href="/search">
+              <Button variant="ghost" size="sm">
+                <Search className="h-4 w-4 mr-2" />
+                Search
+              </Button>
+            </Link>
             {currentUser ? (
               <>
                 <span className="text-sm">Hello, {currentUser.name}</span>
