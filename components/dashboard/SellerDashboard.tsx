@@ -8,13 +8,22 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Plus, Edit, Trash2, Package } from 'lucide-react';
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog";
 
 export default function SellerDashboard() {
   const [newProduct, setNewProduct] = useState<Partial<Product>>({});
+  const [editingProduct, setEditingProduct] = useState<Product | null>(null);
   const currentUser = useStore(state => state.currentUser);
   const products = useStore(state => state.products);
   const orders = useStore(state => state.orders);
   const addProduct = useStore(state => state.addProduct);
+  const updateProduct = useStore(state => state.updateProduct);
   const updateOrderStatus = useStore(state => state.updateOrderStatus);
 
   const handleAddProduct = () => {
@@ -25,6 +34,13 @@ export default function SellerDashboard() {
         image: 'https://images.unsplash.com/photo-1523275335684-37898b6baf30',
       } as Omit<Product, 'id'>);
       setNewProduct({});
+    }
+  };
+
+  const handleEditProduct = () => {
+    if (editingProduct && editingProduct.id) {
+      updateProduct(editingProduct.id, editingProduct);
+      setEditingProduct(null);
     }
   };
 
@@ -73,11 +89,52 @@ export default function SellerDashboard() {
                   <div>
                     <h3 className="font-semibold">{product.name}</h3>
                     <p className="text-gray-600">${product.price}</p>
+                    <p className="text-sm text-gray-500">{product.description}</p>
                   </div>
                   <div className="space-x-2">
-                    <Button variant="outline" size="icon">
-                      <Edit className="h-4 w-4" />
-                    </Button>
+                    <Dialog>
+                      <DialogTrigger asChild>
+                        <Button 
+                          variant="outline" 
+                          size="icon"
+                          onClick={() => setEditingProduct(product)}
+                        >
+                          <Edit className="h-4 w-4" />
+                        </Button>
+                      </DialogTrigger>
+                      <DialogContent>
+                        <DialogHeader>
+                          <DialogTitle>Edit Product</DialogTitle>
+                        </DialogHeader>
+                        <div className="space-y-4 py-4">
+                          <Input
+                            placeholder="Product Name"
+                            value={editingProduct?.name || ''}
+                            onChange={e => setEditingProduct(prev => 
+                              prev ? { ...prev, name: e.target.value } : null
+                            )}
+                          />
+                          <Input
+                            type="number"
+                            placeholder="Price"
+                            value={editingProduct?.price || ''}
+                            onChange={e => setEditingProduct(prev => 
+                              prev ? { ...prev, price: Number(e.target.value) } : null
+                            )}
+                          />
+                          <Input
+                            placeholder="Description"
+                            value={editingProduct?.description || ''}
+                            onChange={e => setEditingProduct(prev => 
+                              prev ? { ...prev, description: e.target.value } : null
+                            )}
+                          />
+                          <Button onClick={handleEditProduct}>
+                            Save Changes
+                          </Button>
+                        </div>
+                      </DialogContent>
+                    </Dialog>
                     <Button variant="destructive" size="icon">
                       <Trash2 className="h-4 w-4" />
                     </Button>
