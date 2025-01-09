@@ -17,7 +17,7 @@ export default function BuyerDashboard() {
       <h1 className="text-3xl font-bold mb-8">Available Products</h1>
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
         {products.map((product: Product) => (
-          <Card key={product.id} className="overflow-hidden" onClick={() => router.push(`/product/${product.id}`)}>
+          <Card key={product.id} className="overflow-hidden hover:cursor-pointer hover:shadow-lg" onClick={() => router.push(`/product/${product.id}`)}>
             <img
               src={product.image}
               alt={product.name}
@@ -25,7 +25,7 @@ export default function BuyerDashboard() {
             />
             <div className="p-4">
               <h3 className="text-lg font-semibold">{product.name}</h3>
-              <p className="text-gray-600">${product.price}</p>
+              <p className="text-gray-600">৳{product.price}</p>
               <p className="text-sm text-gray-500 mt-2">{product.description}</p>
               <Button
                 onClick={() => addToCart(product.id)}
