@@ -10,7 +10,9 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Plus, Edit, Trash2, Package } from 'lucide-react';
 import {
   Dialog,
+  DialogClose,
   DialogContent,
+  DialogFooter,
   DialogHeader,
   DialogTitle,
   DialogTrigger,
@@ -129,9 +131,13 @@ export default function SellerDashboard() {
                               prev ? { ...prev, description: e.target.value } : null
                             )}
                           />
-                          <Button onClick={handleEditProduct}>
-                            Save Changes
-                          </Button>
+                          <DialogFooter>
+                            <DialogClose asChild>
+                              <Button onClick={handleEditProduct}>
+                                Save Changes
+                              </Button>
+                            </DialogClose>
+                          </DialogFooter>
                         </div>
                       </DialogContent>
                     </Dialog>
