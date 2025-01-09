@@ -7,7 +7,9 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardFooter, CardHeader } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { CreditCard, Banknote } from 'lucide-react';
+import { CreditCard, Banknote, Loader2 } from 'lucide-react';
+import { getStripe } from '@/lib/stripe';
+import { toast } from 'sonner';
 
 export default function PaymentPage() {
   const { cart, products, createOrder, currentUser, clearCart } = useStore();
@@ -29,7 +31,9 @@ export default function PaymentPage() {
     const product = products.find(p => p.id === item.productId);
     return {
       ...item,
-      product,
+      name: product?.name || '',
+      image: product?.image || '',
+      price: product?.price || 0,
       total: (product?.price || 0) * item.quantity
     };
   });
@@ -40,12 +44,49 @@ export default function PaymentPage() {
     e.preventDefault();
     setLoading(true);
 
-    // Simulate payment processing
-    await new Promise(resolve => setTimeout(resolve, 2000));
+    try {
+      if (paymentMethod === 'card') {
+        // Create Stripe checkout session
+        const response = await fetch('/api/checkout', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            items: cartItems,
+            userId: currentUser.id,
+          }),
+        });
 
-    createOrder();
-    clearCart();
-    router.push('/orders');
+        const { sessionId, error } = await response.json();
+
+        if (error) {
+          toast.error('Payment failed. Please try again.');
+          return;
+        }
+
+        // Redirect to Stripe checkout
+        const stripe = await getStripe();
+        const { error: stripeError } = await stripe!.redirectToCheckout({
+          sessionId,
+        });
+
+        if (stripeError) {
+          toast.error('Payment failed. Please try again.');
+        }
+      } else {
+        // Handle cash on delivery
+        createOrder();
+        clearCart();
+        router.push('/orders');
+        toast.success('Order placed successfully!');
+      }
+    } catch (error) {
+      console.error('Payment error:', error);
+      toast.error('Payment failed. Please try again.');
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
@@ -61,7 +102,7 @@ export default function PaymentPage() {
               <CardContent className="space-y-4">
                 {cartItems.map(item => (
                   <div key={item.productId} className="flex justify-between">
-                    <span>{item.product?.name} (x{item.quantity})</span>
+                    <span>{item.name} (x{item.quantity})</span>
                     <span>${item.total.toFixed(2)}</span>
                   </div>
                 ))}
@@ -84,7 +125,7 @@ export default function PaymentPage() {
                     <SelectItem value="card">
                       <div className="flex items-center">
                         <CreditCard className="w-4 h-4 mr-2" />
-                        Credit/Debit Card
+                        Credit/Debit Card (Stripe)
                       </div>
                     </SelectItem>
                     <SelectItem value="cash">
@@ -98,67 +139,22 @@ export default function PaymentPage() {
               </CardContent>
             </Card>
 
-            {/* Payment Details */}
-            {paymentMethod === 'card' && (
-              <Card>
-                <CardHeader className="text-lg font-semibold">Card Details</CardHeader>
-                <form onSubmit={handlePayment}>
-                  <CardContent className="space-y-4">
-                    <div>
-                      <Input
-                        placeholder="Card Number"
-                        required
-                        maxLength={16}
-                        pattern="[0-9]*"
-                      />
-                    </div>
-                    <div className="grid grid-cols-2 gap-4">
-                      <Input
-                        placeholder="MM/YY"
-                        required
-                        maxLength={5}
-                        pattern="[0-9/]*"
-                      />
-                      <Input
-                        placeholder="CVC"
-                        required
-                        maxLength={3}
-                        pattern="[0-9]*"
-                      />
-                    </div>
-                    <Input
-                      placeholder="Cardholder Name"
-                      required
-                    />
-                  </CardContent>
-                  <CardFooter>
-                    <Button 
-                      type="submit" 
-                      className="w-full" 
-                      disabled={loading}
-                    >
-                      {loading ? 'Processing...' : `Pay $${total.toFixed(2)}`}
-                    </Button>
-                  </CardFooter>
-                </form>
-              </Card>
-            )}
-
-            {/* Cash on Delivery */}
-            {paymentMethod === 'cash' && (
-              <Card>
-                <CardContent className="text-center py-6">
-                  <p className="mb-4">You will pay ${total.toFixed(2)} upon delivery</p>
-                  <Button 
-                    onClick={handlePayment} 
-                    className="w-full"
-                    disabled={loading}
-                  >
-                    {loading ? 'Processing...' : 'Confirm Order'}
-                  </Button>
-                </CardContent>
-              </Card>
-            )}
+            {/* Submit Button */}
+            <Button
+              className="w-full"
+              size="lg"
+              onClick={handlePayment}
+              disabled={loading}
+            >
+              {loading ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  Processing...
+                </>
+              ) : (
+                `Pay ${paymentMethod === 'card' ? 'with Card' : 'on Delivery'}`
+              )}
+            </Button>
           </div>
         </div>
       </div>
