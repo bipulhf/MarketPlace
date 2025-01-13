@@ -28,7 +28,7 @@ export function SearchResults({ results }: SearchResultsProps) {
       return;
     }
     
-    addToCart(productId);
+    addToCart(productId, 1);
     toast.success('Added to cart successfully');
   };
 
@@ -61,7 +61,7 @@ export function SearchResults({ results }: SearchResultsProps) {
               >
                 {product.name}
               </h3>
-              <p className="font-medium">${product.price.toFixed(2)}</p>
+              <p className="font-medium">৳{product.price.toFixed(2)}</p>
               <p className="text-sm text-muted-foreground line-clamp-2 mt-2">
                 {product.description}
               </p>

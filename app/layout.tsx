@@ -1,15 +1,13 @@
-import './globals.css';
-import type { Metadata } from 'next';
+'use client';
+
 import { Inter } from 'next/font/google';
+import './globals.css';
 import { Navbar } from '@/components/ui/navbar';
 import { StoreProvider } from '@/components/providers/StoreProvider';
+import { Toaster } from 'sonner';
 
 const inter = Inter({ subsets: ['latin'] });
 
-export const metadata: Metadata = {
-  title: 'StyleStore - Fashion E-commerce',
-  description: 'Discover your style with our premium fashion collection',
-};
 
 export default function RootLayout({
   children,
@@ -20,8 +18,9 @@ export default function RootLayout({
     <html lang="en">
       <body className={inter.className}>
         <StoreProvider>
+          <Toaster position="top-center" richColors />
           <Navbar />
-          {children}
+          <main className="min-h-screen">{children}</main>
         </StoreProvider>
       </body>
     </html>

@@ -1,7 +1,7 @@
 'use client';
 
-import { useStore } from '@/lib/store';
 import { useEffect, useState } from 'react';
+import { DataFetcher } from './DataFetcher';
 
 export function StoreProvider({
   children,
@@ -19,5 +19,10 @@ export function StoreProvider({
     return null; // or a loading spinner
   }
 
-  return <>{children}</>;
+  return (
+    <>
+      <DataFetcher />
+      {children}
+    </>
+  );
 }

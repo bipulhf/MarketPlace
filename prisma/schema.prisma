@@ -1,0 +1,95 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
+// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+enum UserRole {
+  buyer
+  seller
+  delivery
+}
+
+enum OrderStatus {
+  pending
+  accepted
+  shipping
+  delivered
+}
+
+model User {
+  id       String    @id @default(cuid())
+  email    String    @unique
+  password String
+  name     String
+  role     UserRole
+
+  // Relations
+  products        Product[] @relation("SellerProducts")
+  ordersAsBuyer   Order[]   @relation("BuyerOrders")
+  ordersAsSeller  Order[]   @relation("SellerOrders")
+  ordersAsDelivery Order[]  @relation("DeliveryOrders")
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model Product {
+  id          String   @id @default(cuid())
+  name        String
+  price       Float
+  description String
+  image       String
+  
+  // Relations
+  seller      User     @relation("SellerProducts", fields: [sellerId], references: [id])
+  sellerId    String
+  orderItems  OrderItem[]
+
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
+model Order {
+  id            String      @id @default(cuid())
+  status        OrderStatus @default(pending)
+  total         Float
+  
+  // Relations
+  buyer         User        @relation("BuyerOrders", fields: [buyerId], references: [id])
+  buyerId       String
+  
+  seller        User        @relation("SellerOrders", fields: [sellerId], references: [id])
+  sellerId      String
+  
+  deliveryMan   User?       @relation("DeliveryOrders", fields: [deliveryManId], references: [id])
+  deliveryManId String?
+  
+  items         OrderItem[]
+
+  createdAt     DateTime    @default(now())
+  updatedAt     DateTime    @updatedAt
+}
+
+model OrderItem {
+  id        String  @id @default(cuid())
+  quantity  Int
+  
+  // Relations
+  order     Order   @relation(fields: [orderId], references: [id])
+  orderId   String
+  
+  product   Product @relation(fields: [productId], references: [id])
+  productId String
+
+  @@unique([orderId, productId])
+}

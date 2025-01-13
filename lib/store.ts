@@ -1,251 +1,398 @@
 import { create } from 'zustand';
-import { User, Product, Order, CartItem } from './types';
-import { persist, createJSONStorage } from 'zustand/middleware';
-
-// Create a broadcast channel for cross-tab communication
-const channel = typeof window !== 'undefined' ? new BroadcastChannel('store_channel') : null;
+import { persist } from 'zustand/middleware';
+import { toast } from 'sonner';
+import { User, Product, Order, OrderStatus } from '@prisma/client';
+import { CartItem } from './types';
 
 interface StoreState {
   // Auth
-  users: User[];
   currentUser: User | null;
-  addUser: (user: Omit<User, 'id'>) => boolean;
-  login: (email: string, password: string) => boolean;
+  setCurrentUser: (user: User | null) => void;
+  login: (email: string, password: string) => Promise<boolean>;
+  addUser: (userData: { name: string; email: string; password: string; role: string; }) => Promise<boolean>;
   logout: () => void;
-
-  // Products
-  products: Product[];
-  addProduct: (product: Omit<Product, 'id'>) => void;
-  updateProduct: (id: string, product: Partial<Product>) => void;
-  deleteProduct: (id: string) => void;
 
   // Cart
   cart: CartItem[];
-  addToCart: (productId: string) => void;
+  addToCart: (product: Product, quantity: number) => void;
   removeFromCart: (productId: string) => void;
-  updateCartQuantity: (productId: string, quantity: number) => void;
   clearCart: () => void;
+  updateCartItemQuantity: (productId: string, quantity: number) => void;
+
+  // Products
+  products: Product[];
+  fetchProducts: () => Promise<void>;
+  fetchProductDetails: (productId: string) => Promise<Product | null>;
+  addProduct: (product: Omit<Product, 'id'>) => Promise<void>;
+  updateProduct: (id: string, product: Partial<Product>) => Promise<void>;
+  deleteProduct: (id: string) => Promise<void>;
 
   // Orders
   orders: Order[];
-  createOrder: () => void;
-  updateOrderStatus: (orderId: string, status: Order['status']) => void;
+  buyerOrders: Order[];
+  sellerOrders: Order[];
+  fetchBuyerOrders: () => Promise<void>;
+  fetchSellerOrders: () => Promise<void>;
+  createOrder: () => Promise<boolean>;
+  updateOrderStatus: (orderId: string, status: OrderStatus) => Promise<void>;
 }
 
-export const useStore = create(
-  persist<StoreState>(
-    (set, get) => {
-      console.log('Initializing store...');
-      return {
-        // Auth
-        users: [
-          {
-            id: 'buyer1',
-            email: 'bipulhf@gmail.com',
-            password: '1234',
-            name: 'Bipul',
-            role: 'buyer'
-          },
-          {
-            id: 'seller1',
-            email: 'shifat@gmail.com',
-            password: '1234',
-            name: 'Shifat',
-            role: 'seller'
-          },
-          {
-            id: 'delivery1',
-            email: 'delivery@gmail.com',
-            password: '1234',
-            name: 'Bob Delivery',
-            role: 'delivery'
-          }
-        ],
-        currentUser: null,
-        addUser: (userData) => {
-          let success = false;
-          set((state) => {
-            const exists = state.users.some(user => user.email === userData.email);
-            if (!exists) {
-              success = true;
-              const newState = {
-                users: [...state.users, { ...userData, id: Math.random().toString(36).slice(2) }]
-              };
-              channel?.postMessage({ type: 'UPDATE_USERS', users: newState.users });
-              return newState;
-            }
-            return state;
+export const useStore = create<StoreState>()(
+  persist(
+    (set, get) => ({
+      // Auth
+      currentUser: null,
+      setCurrentUser: (user) => set({ currentUser: user }),
+      login: async (email, password) => {
+        const loadingToast = toast.loading('Logging in...');
+        try {
+          const response = await fetch('/api/auth/login', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ email, password }),
           });
-          return success;
-        },
-        login: (email, password) => {
-          let success = false;
-          set((state) => {
-            const user = state.users.find(u => u.email === email && u.password === password);
-            if (user) {
-              success = true;
-              channel?.postMessage({ type: 'UPDATE_CURRENT_USER', currentUser: user });
-              return { currentUser: user };
-            }
-            return state;
-          });
-          return success;
-        },
-        logout: () => {
-          set({ currentUser: null });
-          channel?.postMessage({ type: 'UPDATE_CURRENT_USER', currentUser: null });
-        },
 
-        // Products
-        products: [
-          {
-            id: 'prod1',
-            name: 'Premium Leather Wallet',
-            price: 4990,
-            description: 'Handcrafted genuine leather wallet with multiple card slots',
-            sellerId: 'seller1',
-            image: 'https://images.unsplash.com/photo-1627123424574-724758594e93?auto=format&fit=crop&q=80&w=600'
-          },
-          {
-            id: 'prod2',
-            name: 'Wireless Earbuds',
-            price: 12000,
-            description: 'High-quality wireless earbuds with noise cancellation',
-            sellerId: 'seller1',
-            image: 'https://images.unsplash.com/photo-1590658268037-6bf12165a8df?auto=format&fit=crop&q=80&w=600'
-          },
-          {
-            id: 'prod3',
-            name: 'Smart Watch',
-            price: 10000,
-            description: 'Feature-rich smartwatch with health tracking',
-            sellerId: 'seller1',
-            image: 'https://images.unsplash.com/photo-1546868871-7041f2a55e12?auto=format&fit=crop&q=80&w=600'
+          const data = await response.json();
+
+          if (!response.ok) {
+            toast.dismiss(loadingToast);
+            toast.error(data.error || 'Invalid credentials');
+            return false;
           }
-        ],
-        addProduct: (product) => set((state) => ({
-          products: [...state.products, { ...product, id: Math.random().toString(36).slice(2) }]
-        })),
-        updateProduct: (id, updates) => set((state) => ({
-          products: state.products.map(p => p.id === id ? { ...p, ...updates } : p)
-        })),
-        deleteProduct: (id) => set((state) => ({
-          products: state.products.filter(p => p.id !== id)
-        })),
 
-        // Cart
-        cart: [],
-        addToCart: (productId) => set((state) => {
-          const newCart = [...state.cart, { productId, quantity: 1 }];
-          channel?.postMessage({ type: 'UPDATE_CART', cart: newCart });
-          return { cart: newCart };
-        }),
-        removeFromCart: (productId) => set((state) => {
-          const newCart = state.cart.filter(item => item.productId !== productId);
-          channel?.postMessage({ type: 'UPDATE_CART', cart: newCart });
-          return { cart: newCart };
-        }),
-        updateCartQuantity: (productId, quantity) => set((state) => {
-          const newCart = state.cart.map(item => 
+          set({ currentUser: data });
+          toast.dismiss(loadingToast);
+          toast.success('Logged in successfully!');
+          return true;
+        } catch (error) {
+          console.error('Login error:', error);
+          toast.dismiss(loadingToast);
+          toast.error('Error logging in');
+          return false;
+        }
+      },
+      addUser: async (userData) => {
+        const loadingToast = toast.loading('Creating account...');
+        try {
+          const response = await fetch('/api/auth/signup', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(userData),
+          });
+
+          const data = await response.json();
+
+          if (!response.ok) {
+            toast.dismiss(loadingToast);
+            toast.error(data.error || 'Error creating account');
+            return false;
+          }
+
+          toast.dismiss(loadingToast);
+          toast.success('Account created successfully!');
+          return true;
+        } catch (error) {
+          console.error('Signup error:', error);
+          toast.dismiss(loadingToast);
+          toast.error('Error creating account');
+          return false;
+        }
+      },
+      logout: () => {
+        set({ currentUser: null });
+        toast.success('Logged out successfully!');
+      },
+
+      // Cart
+      cart: [],
+      addToCart: (product, quantity) => {
+        const cart = get().cart;
+        const existingItem = cart.find((item) => item.productId === product.id);
+
+        if (existingItem) {
+          set({
+            cart: cart.map((item) =>
+              item.productId === product.id
+                ? { ...item, quantity: item.quantity + quantity }
+                : item
+            ),
+          });
+        } else {
+          set({
+            cart: [...cart, { productId: product.id, quantity }],
+          });
+        }
+        toast.success('Added to cart');
+      },
+      removeFromCart: (productId) =>
+        set((state) => ({
+          cart: state.cart.filter((item) => item.productId !== productId),
+        })),
+      clearCart: () => set({ cart: [] }),
+      updateCartItemQuantity: (productId, quantity) =>
+        set((state) => ({
+          cart: state.cart.map((item) =>
             item.productId === productId ? { ...item, quantity } : item
-          );
-          channel?.postMessage({ type: 'UPDATE_CART', cart: newCart });
-          return { cart: newCart };
-        }),
-        clearCart: () => {
-          set({ cart: [] });
-          channel?.postMessage({ type: 'UPDATE_CART', cart: [] });
-        },
+          ),
+        })),
 
-        // Orders
-        orders: [
-          {
-            id: 'order1',
-            buyerId: 'buyer1',
-            items: [{ productId: 'prod1', quantity: 2 }],
-            status: 'delivered',
-            sellerId: 'seller1',
-            createdAt: '2025-01-10T10:30:00+06:00',
-            total: 9980
-          },
-          {
-            id: 'order2',
-            buyerId: 'buyer1',
-            items: [{ productId: 'prod2', quantity: 1 }],
-            status: 'shipping',
-            sellerId: 'seller1',
-            createdAt: '2025-01-11T15:45:00+06:00',
-            total: 12000
-          },
-          {
-            id: 'order3',
-            buyerId: 'buyer1',
-            items: [{ productId: 'prod3', quantity: 1 }],
-            status: 'accepted',
-            sellerId: 'seller1',
-            createdAt: '2025-01-12T09:20:00+06:00',
-            total: 10000
-          },
-          {
-            id: 'order4',
-            buyerId: 'buyer1',
-            items: [
-              { productId: 'prod1', quantity: 1 },
-              { productId: 'prod2', quantity: 1 }
-            ],
-            status: 'pending',
-            sellerId: 'seller1',
-            createdAt: '2025-01-13T14:15:00+06:00',
-            total: 16990
+      // Products
+      products: [],
+      fetchProducts: async () => {
+        try {
+          const state = get();
+          const url = state.currentUser?.role === 'seller' 
+            ? `/api/products?sellerId=${state.currentUser.id}` 
+            : '/api/products';
+            
+          const response = await fetch(url);
+          const data = await response.json();
+
+          if (!response.ok) {
+            toast.error(data.error || 'Error fetching products');
+            return;
           }
-        ],
-        createOrder: () => set((state) => {
-          if (!state.currentUser || !state.cart.length) return state;
 
-          const items = state.cart;
-          const total = items.reduce((sum, item) => {
+          set({ products: data });
+        } catch (error) {
+          console.error('Error fetching products:', error);
+          toast.error('Error fetching products');
+        }
+      },
+      fetchProductDetails: async (productId) => {
+        try {
+          const response = await fetch(`/api/products/${productId}`);
+          const data = await response.json();
+
+          if (!response.ok) {
+            toast.error(data.error || 'Error fetching product details');
+            return null;
+          }
+
+          return data;
+        } catch (error) {
+          console.error('Error fetching product details:', error);
+          toast.error('Error fetching product details');
+          return null;
+        }
+      },
+      addProduct: async (product) => {
+        try {
+          const response = await fetch('/api/products', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(product),
+          });
+          const data = await response.json();
+
+          if (!response.ok) {
+            toast.error(data.error || 'Error adding product');
+            return;
+          }
+
+          set((state) => ({ products: [...state.products, data] }));
+          toast.success('Product added successfully');
+        } catch (error) {
+          console.error('Error adding product:', error);
+          toast.error('Error adding product');
+        }
+      },
+      updateProduct: async (id, product) => {
+        try {
+          const response = await fetch(`/api/products/${id}`, {
+            method: 'PATCH',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(product),
+          });
+          const data = await response.json();
+
+          if (!response.ok) {
+            toast.error(data.error || 'Error updating product');
+            return;
+          }
+
+          set((state) => ({
+            products: state.products.map((p) => (p.id === id ? { ...p, ...data } : p)),
+          }));
+          toast.success('Product updated successfully');
+        } catch (error) {
+          console.error('Error updating product:', error);
+          toast.error('Error updating product');
+        }
+      },
+      deleteProduct: async (id) => {
+        try {
+          const response = await fetch(`/api/products/${id}`, {
+            method: 'DELETE',
+          });
+
+          if (!response.ok) {
+            const data = await response.json();
+            toast.error(data.error || 'Error deleting product');
+            return;
+          }
+
+          set((state) => ({
+            products: state.products.filter((p) => p.id !== id),
+          }));
+          toast.success('Product deleted successfully');
+        } catch (error) {
+          console.error('Error deleting product:', error);
+          toast.error('Error deleting product');
+        }
+      },
+
+      // Orders
+      orders: [],
+      buyerOrders: [],
+      sellerOrders: [],
+      fetchBuyerOrders: async () => {
+        try {
+          const state = get();
+          if (!state.currentUser) {
+            toast.error('Please login first');
+            return;
+          }
+
+          const response = await fetch(`/api/buyer/orders?buyerId=${state.currentUser.id}`);
+          const data = await response.json();
+
+          if (!response.ok) {
+            toast.error(data.error || 'Error fetching orders');
+            return;
+          }
+
+          set({ buyerOrders: data });
+        } catch (error) {
+          console.error('Error fetching buyer orders:', error);
+          toast.error('Error fetching orders');
+        }
+      },
+      fetchSellerOrders: async () => {
+        try {
+          const state = get();
+          if (!state.currentUser || state.currentUser.role !== 'seller') {
+            toast.error('Unauthorized');
+            return;
+          }
+
+          const response = await fetch(`/api/seller/orders?sellerId=${state.currentUser.id}`);
+          const data = await response.json();
+
+          if (!response.ok) {
+            toast.error(data.error || 'Error fetching orders');
+            return;
+          }
+
+          set({ sellerOrders: data });
+        } catch (error) {
+          console.error('Error fetching seller orders:', error);
+          toast.error('Error fetching orders');
+        }
+      },
+      createOrder: async () => {
+        const loadingToast = toast.loading('Creating order...');
+        try {
+          const state = get();
+          if (!state.currentUser || !state.cart.length) {
+            toast.dismiss(loadingToast);
+            toast.error('Please login and add items to cart');
+            return false;
+          }
+
+          // Group cart items by seller
+          const itemsBySeller = state.cart.reduce((acc, item) => {
             const product = state.products.find(p => p.id === item.productId);
-            return sum + (product?.price || 0) * item.quantity;
-          }, 0);
+            if (!product) return acc;
+            
+            const sellerId = product.sellerId;
+            if (!acc[sellerId]) {
+              acc[sellerId] = [];
+            }
+            acc[sellerId].push(item);
+            return acc;
+          }, {} as Record<string, typeof state.cart>);
 
-          const newOrder = {
-            id: Math.random().toString(36).slice(2),
-            buyerId: state.currentUser.id,
-            items,
-            status: 'pending' as const,
-            sellerId: items[0]?.productId ? state.products.find(p => p.id === items[0].productId)?.sellerId || '' : '',
-            createdAt: new Date().toISOString(),
-            total
-          };
-
-          const newOrders = [...state.orders, newOrder];
-          channel?.postMessage({ type: 'UPDATE_ORDERS', orders: newOrders });
-          return { orders: newOrders };
-        }),
-        updateOrderStatus: (orderId, status) => set((state) => {
-          const newOrders = state.orders.map(order =>
-            order.id === orderId ? { ...order, status } : order
+          // Create an order for each seller
+          const orderPromises = Object.entries(itemsBySeller).map(([sellerId, items]) =>
+            fetch('/api/buyer/orders', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({
+                buyerId: state.currentUser!.id,
+                sellerId,
+                items: items.map(item => ({
+                  productId: item.productId,
+                  quantity: item.quantity
+                }))
+              })
+            }).then(r => r.json())
           );
-          channel?.postMessage({ type: 'UPDATE_ORDERS', orders: newOrders });
-          return { orders: newOrders };
-        })
-      }
-    },
+
+          const orders = await Promise.all(orderPromises);
+
+          set((state) => ({ 
+            buyerOrders: [...orders, ...state.buyerOrders],
+            cart: [] 
+          }));
+          toast.dismiss(loadingToast);
+          toast.success('Orders created successfully!');
+          return true;
+        } catch (error) {
+          console.error('Error creating orders:', error);
+          toast.dismiss(loadingToast);
+          toast.error('Error creating orders');
+          return false;
+        }
+      },
+      updateOrderStatus: async (orderId, status) => {
+        try {
+          const response = await fetch(`/api/orders/${orderId}`, {
+            method: 'PATCH',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ status }),
+          });
+          const data = await response.json();
+
+          if (!response.ok) {
+            toast.error(data.error || 'Error updating order status');
+            return;
+          }
+
+          set((state) => ({
+            orders: state.orders.map((o) =>
+              o.id === orderId ? { ...o, status } : o
+            ),
+            buyerOrders: state.buyerOrders.map((o) =>
+              o.id === orderId ? { ...o, status } : o
+            ),
+            sellerOrders: state.sellerOrders.map((o) =>
+              o.id === orderId ? { ...o, status } : o
+            ),
+          }));
+          toast.success('Order status updated successfully');
+        } catch (error) {
+          console.error('Error updating order status:', error);
+          toast.error('Error updating order status');
+        }
+      },
+    }),
     {
       name: 'store-storage',
-      storage: createJSONStorage(() => localStorage)
+      partialize: (state) => ({
+        currentUser: state.currentUser,
+        cart: state.cart,
+      }),
     }
   )
 );
 
 // Set up broadcast channel listener
 if (typeof window !== 'undefined') {
-  channel?.addEventListener('message', (event) => {
+  const channel = new BroadcastChannel('store_channel');
+  channel.addEventListener('message', (event) => {
     const { type, ...data } = event.data;
     switch (type) {
-      case 'UPDATE_USERS':
-        useStore.setState({ users: data.users });
-        break;
       case 'UPDATE_CURRENT_USER':
         useStore.setState({ currentUser: data.currentUser });
         break;

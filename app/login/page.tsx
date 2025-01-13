@@ -25,8 +25,7 @@ export default function LoginPage() {
     setIsLoading(true);
     
     try {
-      await randomDelay(800, 1500);
-      if (login(email, password)) {
+      if (await login(email, password)) {
         router.push("/dashboard");
       } else {
         setError("Invalid credentials");

@@ -4,7 +4,7 @@ import { useEffect, useState } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import Image from 'next/image';
 import { useStore } from '@/lib/store';
-import { Product, User } from '@/lib/types';
+import { Product } from '@/lib/types';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Separator } from '@/components/ui/separator';
@@ -17,30 +17,27 @@ export default function ProductPage() {
   const params = useParams();
   const router = useRouter();
   const [product, setProduct] = useState<Product | null>(null);
-  const [seller, setSeller] = useState<User | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [isAddingToCart, setIsAddingToCart] = useState(false);
-  const products = useStore((state) => state.products);
-  const users = useStore((state) => state.users);
+  const fetchProductDetails = useStore((state) => state.fetchProductDetails);
   const addToCart = useStore((state) => state.addToCart);
   const currentUser = useStore((state) => state.currentUser);
 
   useEffect(() => {
     const loadProduct = async () => {
       setIsLoading(true);
-      await randomDelay(800, 1500);
-      
-      const foundProduct = products.find((p) => p.id === params.id);
-      if (foundProduct) {
-        setProduct(foundProduct);
-        const productSeller = users.find((u) => u.id === foundProduct.sellerId);
-        setSeller(productSeller || null);
+      const productData = await fetchProductDetails(params.id as string);
+      if (productData) {
+        setProduct(productData);
+      } else {
+        toast.error('Product not found');
+        router.push('/');
       }
       setIsLoading(false);
     };
     
     loadProduct();
-  }, [params.id, products, users]);
+  }, [params.id, fetchProductDetails, router]);
 
   const handleAddToCart = async () => {
     if (!currentUser) {
@@ -48,56 +45,25 @@ export default function ProductPage() {
       router.push('/login');
       return;
     }
+
+    if (!product) return;
     
-    if (product) {
-      setIsAddingToCart(true);
-      await randomDelay(500, 1000);
-      addToCart(product.id);
-      toast.success('Added to cart successfully');
-      setIsAddingToCart(false);
-    }
+    setIsAddingToCart(true);
+    await randomDelay(500, 1000);
+    addToCart(product, 1);
+    setIsAddingToCart(false);
   };
 
   if (isLoading) {
     return (
-      <div className="container mx-auto py-8">
-        <Button
-          variant="ghost"
-          className="mb-6"
-          disabled
-        >
-          <Skeleton className="h-4 w-4 mr-2" />
-          <Skeleton className="h-4 w-16" />
-        </Button>
-
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-          <Skeleton className="aspect-square w-full rounded-lg" />
-          
-          <div className="space-y-6">
-            <div>
-              <Skeleton className="h-8 w-3/4 mb-2" />
-              <Skeleton className="h-6 w-1/4" />
-            </div>
-
-            <Separator />
-
-            <div>
-              <Skeleton className="h-6 w-1/3 mb-2" />
-              <Skeleton className="h-4 w-full" />
-              <Skeleton className="h-4 w-full mt-2" />
-              <Skeleton className="h-4 w-2/3 mt-2" />
-            </div>
-
-            <Separator />
-
-            <div>
-              <Skeleton className="h-6 w-1/3 mb-2" />
-              <Skeleton className="h-4 w-1/2" />
-            </div>
-
-            <div className="pt-4">
-              <Skeleton className="h-12 w-full" />
-            </div>
+      <div className="container mx-auto px-4 py-8">
+        <div className="max-w-4xl mx-auto">
+          <Skeleton className="h-[400px] w-full mb-8" />
+          <div className="space-y-4">
+            <Skeleton className="h-8 w-2/3" />
+            <Skeleton className="h-6 w-1/3" />
+            <Skeleton className="h-24 w-full" />
+            <Skeleton className="h-10 w-40" />
           </div>
         </div>
       </div>
@@ -106,82 +72,72 @@ export default function ProductPage() {
 
   if (!product) {
     return (
-      <div className="container mx-auto py-8">
-        <Card>
-          <CardContent className="p-8 text-center">
-            <p className="text-muted-foreground">Product not found</p>
-          </CardContent>
-        </Card>
+      <div className="container mx-auto px-4 py-8">
+        <div className="max-w-4xl mx-auto text-center">
+          <h1 className="text-2xl font-bold mb-4">Product Not Found</h1>
+          <Button onClick={() => router.push('/')}>
+            <ArrowLeft className="mr-2 h-4 w-4" />
+            Back to Home
+          </Button>
+        </div>
       </div>
     );
   }
 
   return (
-    <div className="container mx-auto py-8">
-      <Button
-        variant="ghost"
-        className="mb-6"
-        onClick={() => router.back()}
-      >
-        <ArrowLeft className="h-4 w-4 mr-2" />
-        Back
-      </Button>
+    <div className="container mx-auto px-4 py-8">
+      <div className="max-w-4xl mx-auto">
+        <Button
+          variant="ghost"
+          className="mb-8"
+          onClick={() => router.back()}
+        >
+          <ArrowLeft className="mr-2 h-4 w-4" />
+          Back to Products
+        </Button>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-        <div className="aspect-square relative bg-muted rounded-lg overflow-hidden">
-          {product.image ? (
-            <Image
-              src={product.image}
-              alt={product.name}
-              fill
-              className="object-cover"
-              priority
-            />
-          ) : (
-            <div className="w-full h-full flex items-center justify-center text-muted-foreground">
-              No image available
+        <Card>
+          <CardContent className="p-6">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+              <div className="aspect-square relative">
+                <img
+                  src={product.image}
+                  alt={product.name}
+                  className="object-cover w-full h-full rounded-lg"
+                />
+              </div>
+
+              <div>
+                <h1 className="text-3xl font-bold">{product.name}</h1>
+                <p className="text-2xl font-semibold mt-4">৳{product.price}</p>
+                
+                <Separator className="my-6" />
+                
+                <div className="space-y-4">
+                  <h2 className="text-lg font-semibold">Description</h2>
+                  <p className="text-gray-600">{product.description}</p>
+                </div>
+
+                <div className="mt-8">
+                  <Button
+                    onClick={handleAddToCart}
+                    disabled={isAddingToCart}
+                    className="w-full"
+                  >
+                    {isAddingToCart ? (
+                      'Adding to Cart...'
+                    ) : (
+                      <>
+                        <ShoppingCart className="mr-2 h-4 w-4" />
+                        Add to Cart
+                      </>
+                    )}
+                  </Button>
+                </div>
+              </div>
             </div>
-          )}
-        </div>
-
-        <div className="space-y-6">
-          <div>
-            <h1 className="text-3xl font-bold mb-2">{product.name}</h1>
-            <p className="text-2xl font-semibold text-primary">
-              ৳{product.price.toFixed(2)}
-            </p>
-          </div>
-
-          <Separator />
-
-          <div>
-            <h2 className="text-lg font-semibold mb-2">Description</h2>
-            <p className="text-muted-foreground">{product.description}</p>
-          </div>
-
-          <Separator />
-
-          <div>
-            <h2 className="text-lg font-semibold mb-2">Seller Information</h2>
-            {seller ? (
-              <p className="text-muted-foreground">Sold by {seller.name}</p>
-            ) : (
-              <p className="text-muted-foreground">Seller information not available</p>
-            )}
-          </div>
-
-          <div className="pt-4">
-            <Button
-              size="lg"
-              className="w-full"
-              onClick={handleAddToCart}
-              disabled={isAddingToCart}
-            >
-              <ShoppingCart className="h-5 w-5 mr-2" />
-              {isAddingToCart ? 'Adding to Cart...' : 'Add to Cart'}
-            </Button>
-          </div>
-        </div>
+          </CardContent>
+        </Card>
       </div>
     </div>
   );

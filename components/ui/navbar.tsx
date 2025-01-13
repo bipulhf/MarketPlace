@@ -24,7 +24,7 @@ export function Navbar() {
                   <Button variant="ghost">Dashboard</Button>
                 </Link>
                 {currentUser.role === 'buyer' && (
-                  <Link href="/orders">
+                  <Link href="/dashboard/orders">
                     <Button variant="ghost">My Orders</Button>
                   </Link>
                 )}

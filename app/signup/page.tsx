@@ -56,7 +56,6 @@ export default function SignUpPage() {
 
     setIsLoading(true);
     try {
-      await randomDelay(800, 1500);
       const success = addUser({
         name,
         email,
@@ -64,7 +63,7 @@ export default function SignUpPage() {
         role: userType as UserRole,
       });
 
-      if (success) {
+      if (await success) {
         router.push("/login");
       } else {
         setError("Email already exists");
@@ -192,7 +191,7 @@ export default function SignUpPage() {
                       <SelectContent>
                         <SelectItem value="buyer">Buyer</SelectItem>
                         <SelectItem value="seller">Seller</SelectItem>
-                        <SelectItem value="delivery">Delivery</SelectItem>
+                        {/* <SelectItem value="delivery">Delivery</SelectItem> */}
                       </SelectContent>
                     </Select>
                   </div>
