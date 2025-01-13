@@ -30,6 +30,7 @@ interface StoreState {
   orders: Order[];
   buyerOrders: Order[];
   sellerOrders: Order[];
+  isLoadingOrders: boolean;
   fetchBuyerOrders: () => Promise<void>;
   fetchSellerOrders: () => Promise<void>;
   createOrder: () => Promise<boolean>;
@@ -245,14 +246,16 @@ export const useStore = create<StoreState>()(
       orders: [],
       buyerOrders: [],
       sellerOrders: [],
+      isLoadingOrders: false,
       fetchBuyerOrders: async () => {
-        try {
-          const state = get();
-          if (!state.currentUser) {
-            toast.error('Please login first');
-            return;
-          }
+        const state = get();
+        if (!state.currentUser) {
+          toast.error('Please login first');
+          return;
+        }
 
+        set({ isLoadingOrders: true });
+        try {
           const response = await fetch(`/api/buyer/orders?buyerId=${state.currentUser.id}`);
           const data = await response.json();
 
@@ -264,17 +267,20 @@ export const useStore = create<StoreState>()(
           set({ buyerOrders: data });
         } catch (error) {
           console.error('Error fetching buyer orders:', error);
-          toast.error('Error fetching orders');
+          toast.error('Failed to fetch your orders');
+        } finally {
+          set({ isLoadingOrders: false });
         }
       },
       fetchSellerOrders: async () => {
-        try {
-          const state = get();
-          if (!state.currentUser || state.currentUser.role !== 'seller') {
-            toast.error('Unauthorized');
-            return;
-          }
+        const state = get();
+        if (!state.currentUser || state.currentUser.role !== 'seller') {
+          toast.error('Unauthorized');
+          return;
+        }
 
+        set({ isLoadingOrders: true });
+        try {
           const response = await fetch(`/api/seller/orders?sellerId=${state.currentUser.id}`);
           const data = await response.json();
 
@@ -286,7 +292,9 @@ export const useStore = create<StoreState>()(
           set({ sellerOrders: data });
         } catch (error) {
           console.error('Error fetching seller orders:', error);
-          toast.error('Error fetching orders');
+          toast.error('Failed to fetch orders');
+        } finally {
+          set({ isLoadingOrders: false });
         }
       },
       createOrder: async () => {
@@ -330,9 +338,9 @@ export const useStore = create<StoreState>()(
           const orders = await Promise.all(orderPromises);
 
           set((state) => ({ 
-            buyerOrders: [...orders, ...state.buyerOrders],
-            cart: [] 
+            buyerOrders: [...orders, ...state.buyerOrders]
           }));
+          
           toast.success('Orders created successfully!', { id: toastId });
           return true;
         } catch (error) {

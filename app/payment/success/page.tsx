@@ -14,9 +14,11 @@ export default function PaymentSuccessPage() {
   const { currentUser, clearCart } = useStore();
 
   useEffect(() => {
+    let toastId: string | number;
+
     const updateOrders = async () => {
       try {
-        // Update orders status to paid
+        toastId = toast.loading('Confirming your order...');
         const response = await fetch('/api/orders/payment', {
           method: 'POST',
           headers: {
@@ -28,15 +30,11 @@ export default function PaymentSuccessPage() {
           }),
         });
 
-        if (!response.ok) {
-          throw new Error('Failed to update order status');
-        }
-
+        const data = await response.json();
         clearCart();
-        toast.success('Payment successful! Your order has been confirmed.');
+        toast.success('Payment successful! Your order has been confirmed.', { id: toastId });
       } catch (error) {
-        console.error('Error updating order status:', error);
-        toast.error('There was an issue confirming your order. Please contact support.');
+        toast.error('There was an issue confirming your order. Please contact support.', { id: toastId });
       }
     };
 
@@ -44,6 +42,12 @@ export default function PaymentSuccessPage() {
     if (sessionId && currentUser) {
       updateOrders();
     }
+
+    return () => {
+      if (toastId) {
+        toast.dismiss(toastId);
+      }
+    };
   }, [searchParams, currentUser, clearCart]);
 
   return (

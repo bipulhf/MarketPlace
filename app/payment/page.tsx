@@ -46,15 +46,7 @@ export default function PaymentPage() {
 
     try {
       if (paymentMethod === 'card') {
-        // First create the order
-        const orderCreated = await createOrder();
-        
-        if (!orderCreated) {
-          toast.error('Failed to create order');
-          return;
-        }
-
-        // Then create Stripe checkout session
+        // Create Stripe checkout session first
         const response = await fetch('/api/checkout', {
           method: 'POST',
           headers: {
@@ -73,15 +65,18 @@ export default function PaymentPage() {
           return;
         }
 
+        // Create order
+        const orderCreated = await createOrder();
+        if (!orderCreated) {
+          toast.error('Failed to create order');
+          return;
+        }
+
         // Redirect to Stripe checkout
         const stripe = await getStripe();
-        const { error: stripeError } = await stripe!.redirectToCheckout({
+        await stripe!.redirectToCheckout({
           sessionId,
         });
-
-        if (stripeError) {
-          toast.error('Payment failed. Please try again.');
-        }
       } else {
         // Handle cash on delivery
         const orderCreated = await createOrder();

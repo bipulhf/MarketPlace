@@ -2,8 +2,10 @@
 
 import { useEffect, useState } from 'react';
 import { useStore } from '@/lib/store';
+import { useRouter } from 'next/navigation';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
+import { Loader2 } from 'lucide-react';
 import { format } from 'date-fns';
 import { Order, CartItem, Product } from '@/lib/types';
 
@@ -16,10 +18,16 @@ interface OrderWithProducts extends Order {
 }
 
 export default function OrdersPage() {
-  const { currentUser, buyerOrders, fetchBuyerOrders, products } = useStore();
+  const { currentUser, buyerOrders, fetchBuyerOrders, products, isLoadingOrders } = useStore();
+  const router = useRouter();
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
+    if (!currentUser) {
+      router.push('/login');
+      return;
+    }
+
     const loadOrders = async () => {
       if (currentUser) {
         await fetchBuyerOrders();
@@ -27,7 +35,7 @@ export default function OrdersPage() {
       setIsLoading(false);
     };
     loadOrders();
-  }, [currentUser, fetchBuyerOrders]);  
+  }, [currentUser, fetchBuyerOrders, router]);
 
   if (!currentUser) {
     return (
@@ -37,10 +45,15 @@ export default function OrdersPage() {
     );
   }
 
-  if (isLoading) {
+  if (isLoading || isLoadingOrders) {
     return (
-      <div className="container mx-auto p-4">
-        <div className="text-center">Loading orders...</div>
+      <div className="min-h-screen bg-gray-50 py-12">
+        <div className="container mx-auto px-4">
+          <div className="flex items-center justify-center">
+            <Loader2 className="w-8 h-8 animate-spin text-primary" />
+            <span className="ml-2 text-lg">Loading orders...</span>
+          </div>
+        </div>
       </div>
     );
   }
@@ -54,13 +67,26 @@ export default function OrdersPage() {
     }))
   }));
 
+  if (!ordersWithProducts.length) {
+    return (
+      <div className="min-h-screen bg-gray-50 py-12">
+        <div className="container mx-auto px-4">
+          <div className="text-center">
+            <h2 className="text-xl font-semibold mb-2">No Orders Found</h2>
+            <p className="text-gray-600">You haven't placed any orders yet.</p>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   return (
-    <div className="container mx-auto p-4">
-      <h1 className="text-2xl font-bold mb-4">My Orders</h1>
-      <div className="grid gap-4">
-        {ordersWithProducts && ordersWithProducts.length > 0 ? (
-          ordersWithProducts.map((order) => (
-            <Card key={order.id}>
+    <div className="min-h-screen bg-gray-50 py-12">
+      <div className="container mx-auto px-4">
+        <h1 className="text-3xl font-bold mb-8">Your Orders</h1>
+        <div className="space-y-6">
+          {ordersWithProducts.map((order) => (
+            <Card key={order.id} className="p-6">
               <CardHeader>
                 <CardTitle className="flex justify-between items-center">
                   <span>Order #{order.id.slice(0, 8)}</span>
@@ -89,29 +115,30 @@ export default function OrdersPage() {
                     <h3 className="font-semibold">Items</h3>
                     <div className="space-y-2">
                       {order.items.map((item) => (
-                        <div key={item.productId} className="flex justify-between items-center">
+                        <div key={item.productId} className="flex items-center space-x-4">
                           <div>
                             <p className="font-medium">{item.product.name}</p>
-                            <p className="text-sm text-gray-600">
-                              Quantity: {item.quantity}
+                            <p className="text-sm text-gray-500">
+                              Quantity: {item.quantity} × ৳{item.product.price}
                             </p>
                           </div>
-                          <p className="font-medium">
-                          ৳{(item.product.price * item.quantity).toFixed(2)}
-                          </p>
                         </div>
                       ))}
                     </div>
                   </div>
                 </div>
+                <div className="mt-4 pt-4 border-t">
+                  <div className="flex justify-between">
+                    <p className="font-semibold">Total Amount</p>
+                    <p className="font-semibold">
+                      ৳{order.items.reduce((sum, item) => sum + item.quantity * item.product.price, 0).toFixed(2)}
+                    </p>
+                  </div>
+                </div>
               </CardContent>
             </Card>
-          ))
-        ) : (
-          <div className="text-center py-8 text-gray-500">
-            No orders found
-          </div>
-        )}
+          ))}
+        </div>
       </div>
     </div>
   );

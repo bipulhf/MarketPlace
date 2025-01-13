@@ -3,10 +3,17 @@ import { NextResponse } from 'next/server';
 
 export async function POST(request: Request) {
   try {
-    const { userId, status } = await request.json();
+    const body = await request.json();
+    const { userId, status } = body;
 
-    if (!userId) {
-      return new NextResponse('User ID is required', { status: 400 });
+    if (!userId || !status) {
+      return new NextResponse(JSON.stringify({
+        success: false,
+        error: 'User ID and status are required'
+      }), {
+        status: 400,
+        headers: { 'Content-Type': 'application/json' }
+      });
     }
 
     // Update all pending orders for the user to paid
@@ -20,12 +27,21 @@ export async function POST(request: Request) {
       }
     });
 
-    return NextResponse.json({ 
+    return new NextResponse(JSON.stringify({
+      success: true,
       message: 'Orders updated successfully',
-      updatedCount: updatedOrders.count 
+      updatedCount: updatedOrders.count
+    }), {
+      status: 200,
+      headers: { 'Content-Type': 'application/json' }
     });
   } catch (error) {
-    console.error('Error updating orders:', error);
-    return new NextResponse('Error updating orders', { status: 500 });
+    return new NextResponse(JSON.stringify({
+      success: false,
+      error: 'Error updating orders'
+    }), {
+      status: 500,
+      headers: { 'Content-Type': 'application/json' }
+    });
   }
 }
