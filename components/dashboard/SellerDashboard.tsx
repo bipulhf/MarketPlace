@@ -426,7 +426,11 @@ export default function SellerDashboard() {
 
       <TabsContent value="orders">
           <div className="space-y-4">
-            {ordersWithProducts.map((order) => (
+            {ordersWithProducts.length <= 0 ? 
+            <div className="text-center py-12">
+              <p className="text-muted-foreground">No orders found</p>
+            </div>
+            :ordersWithProducts.map((order) => (
               <Card key={order.id}>
                 <CardContent className="p-6">
                   <div className="flex justify-between items-start mb-4">
