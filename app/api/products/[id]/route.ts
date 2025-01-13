@@ -87,6 +87,50 @@ export async function PATCH(
   }
 }
 
+// Update a product
+export async function PUT(
+  request: NextRequest,
+  { params }: Props
+) {
+  try {
+    const { id } = await params;
+    const body = await request.json();
+    const { name, price, description } = body;
+
+    if (!id) {
+      return NextResponse.json(
+        { error: 'Product ID is required' },
+        { status: 400 }
+      );
+    }
+
+    // Validate required fields
+    if (!name || typeof price !== 'number') {
+      return NextResponse.json(
+        { error: 'Name and price are required fields' },
+        { status: 400 }
+      );
+    }
+
+    const updatedProduct = await prisma.product.update({
+      where: { id },
+      data: {
+        name,
+        price,
+        description: description || '',
+      },
+    });
+
+    return NextResponse.json(updatedProduct);
+  } catch (error) {
+    console.error('Error updating product:', error);
+    return NextResponse.json(
+      { error: 'Error updating product' },
+      { status: 500 }
+    );
+  }
+}
+
 // Delete a product
 export async function DELETE(
   request: NextRequest,

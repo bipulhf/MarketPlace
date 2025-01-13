@@ -1,18 +1,26 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { useStore } from '@/lib/store';
-import { Product, Order, OrderStatus, CartItem } from '@/lib/types';
 import { Card, CardContent } from '@/components/ui/card';
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogFooter,
+  DialogTrigger,
+  DialogClose,
+} from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Plus, Edit, Trash2, Package, Loader2, BarChart } from 'lucide-react';
+import { Plus, Edit, Trash2, Package, Loader2, BarChart, TrendingUp, DollarSign } from 'lucide-react';
 import { getProductImage } from '@/lib/imageUtils';
-import {
-  Line,
-  Bar
-} from 'react-chartjs-2';
+import { toast } from 'sonner';
+import { Select } from '@radix-ui/react-select';
+import { OrderStatus } from '@/lib/types';
+import { SelectContent, SelectItem, SelectTrigger, SelectValue } from '../ui/select';
 import {
   Chart as ChartJS,
   CategoryScale,
@@ -24,33 +32,7 @@ import {
   Tooltip,
   Legend
 } from 'chart.js';
-import {
-  Dialog,
-  DialogClose,
-  DialogContent,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-  DialogTrigger,
-} from "@/components/ui/dialog";
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-  AlertDialogTrigger,
-} from "@/components/ui/alert-dialog";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
+import { Line, Bar } from 'react-chartjs-2';
 
 ChartJS.register(
   CategoryScale,
@@ -63,56 +45,116 @@ ChartJS.register(
   Legend
 );
 
-interface OrderItemWithProduct extends CartItem {
-  product: Product;
-}
-
-interface OrderWithProducts extends Order {
-  items: OrderItemWithProduct[];
-}
-
 interface NewProduct {
   name?: string;
   price?: number;
   description?: string;
 }
 
+interface Analytics {
+  currentMonth: {
+    total: number;
+    orderCount: number;
+  };
+  lifetime: {
+    total: number;
+    orderCount: number;
+  };
+}
+
+interface Product {
+  id: string;
+  name: string;
+  price: number;
+  description: string;
+  image: string;
+}
+
+interface Order {
+  id: string;
+  createdAt: string;
+  items: {
+    productId: string;
+    quantity: number;
+  }[];
+}
+
+interface OrderWithProducts extends Order {
+  items: {
+    productId: string;
+    quantity: number;
+    product: Product;
+  }[];
+}
+
 export default function SellerDashboard() {
   const [newProduct, setNewProduct] = useState<NewProduct>({});
   const [editingProduct, setEditingProduct] = useState<Product | null>(null);
   const [isLoading, setIsLoading] = useState(false);
+  const [analytics, setAnalytics] = useState<Analytics | null>(null);
+  const [isLoadingAnalytics, setIsLoadingAnalytics] = useState(true);
   const currentUser = useStore(state => state.currentUser);
   const products = useStore(state => state.products);
   const sellerOrders = useStore(state => state.sellerOrders);
-  const addProduct = useStore(state => state.addProduct);
-  const updateProduct = useStore(state => state.updateProduct);
-  const deleteProduct = useStore(state => state.deleteProduct);
   const updateOrderStatus = useStore(state => state.updateOrderStatus);
   const fetchProducts = useStore(state => state.fetchProducts);
   const fetchSellerOrders = useStore(state => state.fetchSellerOrders);
 
   useEffect(() => {
-    if (currentUser?.role === 'seller') {
+    if (currentUser) {
       fetchProducts();
       fetchSellerOrders();
     }
   }, [currentUser, fetchProducts, fetchSellerOrders]);
+
+  useEffect(() => {
+    const fetchAnalytics = async () => {
+      if (!currentUser) return;
+      
+      try {
+        const response = await fetch(`/api/seller/analytics?sellerId=${currentUser.id}`);
+        const data = await response.json();
+        setAnalytics(data);
+      } catch (error) {
+        console.error('Error fetching analytics:', error);
+      } finally {
+        setIsLoadingAnalytics(false);
+      }
+    };
+
+    fetchAnalytics();
+  }, [currentUser]);
 
   const handleAddProduct = async () => {
     if (currentUser && newProduct.name && newProduct.price) {
       setIsLoading(true);
       try {
         const imageUrl = await getProductImage(newProduct.name);
-        await addProduct({
-          name: newProduct.name,
-          price: newProduct.price,
-          description: newProduct.description || '',
-          image: imageUrl,
-          sellerId: currentUser.id,
+        
+        const response = await fetch('/api/products', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            name: newProduct.name,
+            price: Number(newProduct.price),
+            description: newProduct.description || '',
+            sellerId: currentUser.id,
+            image: imageUrl,
+          }),
         });
+
+        if (!response.ok) {
+          throw new Error('Failed to add product');
+        }
+
+        await fetchProducts();
         setNewProduct({});
+        toast.success('Product added successfully!');
       } catch (error) {
         console.error('Error adding product:', error);
+        toast.error('Failed to add product');
       } finally {
         setIsLoading(false);
       }
@@ -120,48 +162,70 @@ export default function SellerDashboard() {
   };
 
   const handleEditProduct = async () => {
-    if (editingProduct && editingProduct.id) {
-      setIsLoading(true);
-      try {
-        const imageUrl = await getProductImage(editingProduct.name);
-        await updateProduct(editingProduct.id, { 
+    if (!editingProduct) return;
+
+    setIsLoading(true);
+    try {
+      const response = await fetch(`/api/products/${editingProduct.id}`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
           name: editingProduct.name,
-          price: editingProduct.price,
-          description: editingProduct.description,
-          image: imageUrl,
-        });
-        setEditingProduct(null);
-      } catch (error) {
-        console.error('Error updating product:', error);
-      } finally {
-        setIsLoading(false);
+          price: Number(editingProduct.price),
+          description: editingProduct.description || '',
+        }),
+      });
+
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.message || 'Failed to update product');
       }
+
+      await fetchProducts();
+      setEditingProduct(null);
+      toast.success('Product updated successfully!');
+    } catch (error: any) {
+      console.error('Error updating product:', error);
+      toast.error(error.message || 'Failed to update product');
+    } finally {
+      setIsLoading(false);
     }
   };
 
-  const handleDeleteProduct = async (id: string) => {
-    if (id) {
-      setIsLoading(true);
-      try {
-        await deleteProduct(id);
-      } catch (error) {
-        console.error('Error deleting product:', error);
-      } finally {
-        setIsLoading(false);
+  const handleDeleteProduct = async (productId: string) => {
+    if (!confirm('Are you sure you want to delete this product?')) return;
+
+    setIsLoading(true);
+    try {
+      const response = await fetch(`/api/products/${productId}`, {
+        method: 'DELETE',
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to delete product');
       }
+
+      await fetchProducts();
+      toast.success('Product deleted successfully!');
+    } catch (error) {
+      console.error('Error deleting product:', error);
+      toast.error('Failed to delete product');
+    } finally {
+      setIsLoading(false);
     }
   };
 
-  // Transform orders to include product information
-  const ordersWithProducts: OrderWithProducts[] = sellerOrders.map(order => ({
+    // Update the ordersWithProducts mapping
+  const ordersWithProducts = sellerOrders.map((order) => ({
     ...order,
-    items: order.items.map(item => ({
+    items: order.items.map((item) => ({
       ...item,
-      product: products.find(p => p.id === item.productId)!
+      product: products.find((p) => p.id === item.productId)
     }))
   }));
 
-  // Calculate analytics data
   const analyticsData = {
     ordersByStatus: {
       pending: ordersWithProducts.filter(o => o.status === 'pending').length,
@@ -171,7 +235,7 @@ export default function SellerDashboard() {
     },
     revenue: ordersWithProducts.reduce((total, order) => 
       total + order.items.reduce((sum, item) => 
-        sum + (item.product.price * item.quantity), 0
+        sum + ((item.product?.price || 0) * item.quantity), 0
       ), 0
     ),
     revenueByDate: ordersWithProducts
@@ -179,22 +243,82 @@ export default function SellerDashboard() {
       .map(order => ({
         date: new Date(order.createdAt).toLocaleDateString(),
         revenue: order.items.reduce((sum, item) => 
-          sum + (item.product.price * item.quantity), 0
+          sum + ((item.product?.price || 0) * item.quantity), 0
         )
       }))
   };
 
   return (
-    <div className="space-y-8">
-      <Tabs defaultValue="products">
-        <TabsList className="mb-4">
-          <TabsTrigger value="products">Manage Products</TabsTrigger>
-          <TabsTrigger value="orders">Manage Orders</TabsTrigger>
-          <TabsTrigger value="analytics">Analytics</TabsTrigger>
-        </TabsList>
+    <Tabs defaultValue="products" className="w-full">
+      <TabsList className="grid w-full grid-cols-3">
+        <TabsTrigger value="products">Products</TabsTrigger>
+        <TabsTrigger value="orders">Manage Orders</TabsTrigger>
+        <TabsTrigger value="analytics">Analytics</TabsTrigger>
+      </TabsList>
 
-        <TabsContent value="products">
-          <div className="grid gap-4">
+      <TabsContent value="products">
+        <div className="space-y-6">
+          {/* Analytics Cards */}
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+            {/* Total Products */}
+            <Card className="p-6">
+              <div className="flex items-center">
+                <Package className="w-8 h-8 text-primary" />
+                <div className="ml-4">
+                  <p className="text-sm font-medium text-gray-500">Total Products</p>
+                  <h3 className="text-2xl font-bold">{products.length}</h3>
+                </div>
+              </div>
+            </Card>
+
+            {/* Current Month Sales */}
+            <Card className="p-6">
+              <div className="flex items-center">
+                <TrendingUp className="w-8 h-8 text-green-500" />
+                <div className="ml-4">
+                  <p className="text-sm font-medium text-gray-500">Current Month Sales</p>
+                  {isLoadingAnalytics ? (
+                    <Loader2 className="w-4 h-4 animate-spin" />
+                  ) : (
+                    <>
+                      <h3 className="text-2xl font-bold">
+                        ৳{analytics?.currentMonth.total.toFixed(2) || '0.00'}
+                      </h3>
+                      <p className="text-sm text-gray-500">
+                        {analytics?.currentMonth.orderCount || 0} orders
+                      </p>
+                    </>
+                  )}
+                </div>
+              </div>
+            </Card>
+
+            {/* Lifetime Sales */}
+            <Card className="p-6">
+              <div className="flex items-center">
+                <DollarSign className="w-8 h-8 text-blue-500" />
+                <div className="ml-4">
+                  <p className="text-sm font-medium text-gray-500">Lifetime Sales</p>
+                  {isLoadingAnalytics ? (
+                    <Loader2 className="w-4 h-4 animate-spin" />
+                  ) : (
+                    <>
+                      <h3 className="text-2xl font-bold">
+                        ৳{analytics?.lifetime.total.toFixed(2) || '0.00'}
+                      </h3>
+                      <p className="text-sm text-gray-500">
+                        {analytics?.lifetime.orderCount || 0} orders
+                      </p>
+                    </>
+                  )}
+                </div>
+              </div>
+            </Card>
+          </div>
+
+          {/* Products Section */}
+          <div className="flex justify-between items-center mb-6">
+            <h2 className="text-2xl font-bold">Your Products</h2>
             <Dialog>
               <DialogTrigger asChild>
                 <Button>
@@ -259,135 +383,48 @@ export default function SellerDashboard() {
                 </DialogFooter>
               </DialogContent>
             </Dialog>
-
-            {/* Edit Product Dialog */}
-            <Dialog open={!!editingProduct} onOpenChange={(open) => !open && setEditingProduct(null)}>
-              <DialogContent>
-                <DialogHeader>
-                  <DialogTitle>Edit Product</DialogTitle>
-                </DialogHeader>
-                <div className="space-y-4 py-4">
-                  <Input
-                    placeholder="Product Name"
-                    value={editingProduct?.name || ''}
-                    onChange={(e) =>
-                      editingProduct && setEditingProduct({
-                        ...editingProduct,
-                        name: e.target.value,
-                      })
-                    }
-                  />
-                  <Input
-                    type="number"
-                    placeholder="Price"
-                    value={editingProduct?.price || ''}
-                    onChange={(e) =>
-                      editingProduct && setEditingProduct({
-                        ...editingProduct,
-                        price: parseFloat(e.target.value),
-                      })
-                    }
-                  />
-                  <Input
-                    placeholder="Description"
-                    value={editingProduct?.description || ''}
-                    onChange={(e) =>
-                      editingProduct && setEditingProduct({
-                        ...editingProduct,
-                        description: e.target.value,
-                      })
-                    }
-                  />
-                </div>
-                <DialogFooter>
-                  <Button variant="outline" onClick={() => setEditingProduct(null)}>
-                    Cancel
-                  </Button>
-                  <Button
-                    onClick={handleEditProduct}
-                    disabled={isLoading || !editingProduct?.name || !editingProduct?.price}
-                  >
-                    {isLoading ? (
-                      <>
-                        <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                        Updating...
-                      </>
-                    ) : (
-                      <>
-                        <Edit className="w-4 h-4 mr-2" />
-                        Update Product
-                      </>
-                    )}
-                  </Button>
-                </DialogFooter>
-              </DialogContent>
-            </Dialog>
-
-            <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-              {products.map((product) => (
-                <Card key={product.id} className="overflow-hidden">
-                  <div className="aspect-video relative">
-                    <img
-                      src={product.image}
-                      alt={product.name}
-                      className="object-cover w-full h-full"
-                    />
-                  </div>
-                  <CardContent className="p-4">
-                    <div className="flex justify-between items-start mb-2">
-                      <div>
-                        <h3 className="font-semibold">{product.name}</h3>
-                        <p className="text-sm text-gray-500">
-                          ৳{product.price.toFixed(2)}
-                        </p>
-                      </div>
-                      <div className="flex gap-2">
-                        <Button
-                          size="icon"
-                          variant="ghost"
-                          onClick={() => setEditingProduct(product)}
-                        >
-                          <Edit className="w-4 h-4" />
-                        </Button>
-                        <AlertDialog>
-                          <AlertDialogTrigger asChild>
-                            <Button size="icon" variant="ghost">
-                              <Trash2 className="w-4 h-4" />
-                            </Button>
-                          </AlertDialogTrigger>
-                          <AlertDialogContent>
-                            <AlertDialogHeader>
-                              <AlertDialogTitle>
-                                Delete {product.name}?
-                              </AlertDialogTitle>
-                              <AlertDialogDescription>
-                                This action cannot be undone. This will permanently
-                                delete the product.
-                              </AlertDialogDescription>
-                            </AlertDialogHeader>
-                            <AlertDialogFooter>
-                              <AlertDialogCancel>Cancel</AlertDialogCancel>
-                              <AlertDialogAction
-                                onClick={() => handleDeleteProduct(product.id)}
-                              >
-                                Delete
-                              </AlertDialogAction>
-                            </AlertDialogFooter>
-                          </AlertDialogContent>
-                        </AlertDialog>
-                      </div>
-                    </div>
-                    <p className="text-sm text-gray-600">
-                      {product.description || 'No description'}
-                    </p>
-                  </CardContent>
-                </Card>
-              ))}
-            </div>
           </div>
-        </TabsContent>
 
-        <TabsContent value="orders">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {products.map((product) => (
+              <Card key={product.id} className="overflow-hidden">
+                <div className="aspect-video relative">
+                  <img
+                    src={product.image}
+                    alt={product.name}
+                    className="object-cover w-full h-full"
+                  />
+                  <div className="absolute top-2 right-2 space-x-2">
+                    <Button
+                      size="icon"
+                      variant="secondary"
+                      onClick={() => setEditingProduct(product)}
+                    >
+                      <Edit className="w-4 h-4" />
+                    </Button>
+                    <Button
+                      size="icon"
+                      variant="destructive"
+                      onClick={() => handleDeleteProduct(product.id)}
+                    >
+                      <Trash2 className="w-4 h-4" />
+                    </Button>
+                  </div>
+                </div>
+                <div className="p-4">
+                  <h3 className="font-semibold mb-2">{product.name}</h3>
+                  <p className="text-gray-600 mb-2">{product.description}</p>
+                  <div className="flex justify-between items-center">
+                    <p className="font-bold">৳{product.price.toFixed(2)}</p>
+                  </div>
+                </div>
+              </Card>
+            ))}
+          </div>
+        </div>
+      </TabsContent>
+
+      <TabsContent value="orders">
           <div className="space-y-4">
             {ordersWithProducts.map((order) => (
               <Card key={order.id}>
@@ -427,19 +464,19 @@ export default function SellerDashboard() {
                       >
                         <div className="flex items-center gap-4">
                           <img
-                            src={item.product.image}
-                            alt={item.product.name}
+                            src={item.product?.image}
+                            alt={item.product?.name}
                             className="w-12 h-12 object-cover rounded"
                           />
                           <div>
-                            <p className="font-medium">{item.product.name}</p>
+                            <p className="font-medium">{item.product?.name}</p>
                             <p className="text-sm text-gray-500">
                               Quantity: {item.quantity}
                             </p>
                           </div>
                         </div>
                         <p className="font-medium">
-                        ৳{(item.product.price * item.quantity).toFixed(2)}
+                        ৳{((item.product?.price || 0) * item.quantity).toFixed(2)}
                         </p>
                       </div>
                     ))}
@@ -449,7 +486,7 @@ export default function SellerDashboard() {
                       Total: ৳
                       {order.items
                         .reduce(
-                          (sum, item) => sum + item.product.price * item.quantity,
+                          (sum, item) => sum + ((item.product?.price || 0) * item.quantity),
                           0
                         )
                         .toFixed(2)}
@@ -460,6 +497,7 @@ export default function SellerDashboard() {
             ))}
           </div>
         </TabsContent>
+
 
         <TabsContent value="analytics">
           <div className="grid gap-8 md:grid-cols-2">
@@ -536,7 +574,69 @@ export default function SellerDashboard() {
             </Card>
           </div>
         </TabsContent>
-      </Tabs>
-    </div>
+
+      {/* Edit Product Dialog */}
+      <Dialog open={!!editingProduct} onOpenChange={(open) => !open && setEditingProduct(null)}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Edit Product</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4 py-4">
+            <Input
+              placeholder="Product Name"
+              value={editingProduct?.name || ''}
+              onChange={(e) =>
+                editingProduct && setEditingProduct({
+                  ...editingProduct,
+                  name: e.target.value,
+                })
+              }
+            />
+            <Input
+              type="number"
+              placeholder="Price"
+              value={editingProduct?.price || ''}
+              onChange={(e) =>
+                editingProduct && setEditingProduct({
+                  ...editingProduct,
+                  price: parseFloat(e.target.value),
+                })
+              }
+            />
+            <Input
+              placeholder="Description"
+              value={editingProduct?.description || ''}
+              onChange={(e) =>
+                editingProduct && setEditingProduct({
+                  ...editingProduct,
+                  description: e.target.value,
+                })
+              }
+            />
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setEditingProduct(null)}>
+              Cancel
+            </Button>
+            <Button
+              onClick={handleEditProduct}
+              disabled={isLoading || !editingProduct?.name || !editingProduct?.price}
+            >
+              {isLoading ? (
+                <>
+                  <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                  Updating...
+                </>
+              ) : (
+                <>
+                  <Edit className="w-4 h-4 mr-2" />
+                  Update Product
+                </>
+              )}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+    </Tabs>
   );
 }
