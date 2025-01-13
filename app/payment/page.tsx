@@ -46,7 +46,15 @@ export default function PaymentPage() {
 
     try {
       if (paymentMethod === 'card') {
-        // Create Stripe checkout session
+        // First create the order
+        const orderCreated = await createOrder();
+        
+        if (!orderCreated) {
+          toast.error('Failed to create order');
+          return;
+        }
+
+        // Then create Stripe checkout session
         const response = await fetch('/api/checkout', {
           method: 'POST',
           headers: {
@@ -76,10 +84,12 @@ export default function PaymentPage() {
         }
       } else {
         // Handle cash on delivery
-        createOrder();
-        clearCart();
-        router.push('/orders');
-        toast.success('Order placed successfully!');
+        const orderCreated = await createOrder();
+        if (orderCreated) {
+          clearCart();
+          router.push('/orders');
+          toast.success('Order placed successfully!');
+        }
       }
     } catch (error) {
       console.error('Payment error:', error);
@@ -99,16 +109,23 @@ export default function PaymentPage() {
             {/* Order Summary */}
             <Card>
               <CardHeader className="text-lg font-semibold">Order Summary</CardHeader>
-              <CardContent className="space-y-4">
-                {cartItems.map(item => (
-                  <div key={item.productId} className="flex justify-between">
-                    <span>{item.name} (x{item.quantity})</span>
-                    <span>৳{item.total.toFixed(2)}</span>
+              <CardContent>
+                <div className="space-y-4">
+                  {cartItems.map(item => (
+                    <div key={item.productId} className="flex justify-between">
+                      <div>
+                        <p className="font-medium">{item.name}</p>
+                        <p className="text-sm text-gray-500">Quantity: {item.quantity}</p>
+                      </div>
+                      <p className="font-medium">৳{item.total.toFixed(2)}</p>
+                    </div>
+                  ))}
+                  <div className="border-t pt-4 mt-4">
+                    <div className="flex justify-between">
+                      <p className="font-bold">Total</p>
+                      <p className="font-bold">৳{total.toFixed(2)}</p>
+                    </div>
                   </div>
-                ))}
-                <div className="border-t pt-4 font-bold flex justify-between">
-                  <span>Total</span>
-                  <span>৳{total.toFixed(2)}</span>
                 </div>
               </CardContent>
             </Card>
@@ -119,13 +136,13 @@ export default function PaymentPage() {
               <CardContent>
                 <Select value={paymentMethod} onValueChange={setPaymentMethod}>
                   <SelectTrigger>
-                    <SelectValue placeholder="Select payment method" />
+                    <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
                     <SelectItem value="card">
                       <div className="flex items-center">
                         <CreditCard className="w-4 h-4 mr-2" />
-                        Credit/Debit Card (Stripe)
+                        Credit/Debit Card
                       </div>
                     </SelectItem>
                     <SelectItem value="cash">
@@ -137,24 +154,23 @@ export default function PaymentPage() {
                   </SelectContent>
                 </Select>
               </CardContent>
+              <CardFooter>
+                <Button
+                  className="w-full"
+                  onClick={handlePayment}
+                  disabled={loading}
+                >
+                  {loading ? (
+                    <>
+                      <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                      Processing...
+                    </>
+                  ) : (
+                    `Pay ৳${total.toFixed(2)}`
+                  )}
+                </Button>
+              </CardFooter>
             </Card>
-
-            {/* Submit Button */}
-            <Button
-              className="w-full"
-              size="lg"
-              onClick={handlePayment}
-              disabled={loading}
-            >
-              {loading ? (
-                <>
-                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                  Processing...
-                </>
-              ) : (
-                `Pay ${paymentMethod === 'card' ? 'with Card' : 'on Delivery'}`
-              )}
-            </Button>
           </div>
         </div>
       </div>

@@ -1,8 +1,7 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 import { toast } from 'sonner';
-import { User, Product, Order, OrderStatus } from '@prisma/client';
-import { CartItem } from './types';
+import { User, Product, Order, OrderStatus, CartItem } from '@/lib/types';
 
 interface StoreState {
   // Auth
@@ -23,7 +22,7 @@ interface StoreState {
   products: Product[];
   fetchProducts: () => Promise<void>;
   fetchProductDetails: (productId: string) => Promise<Product | null>;
-  addProduct: (product: Omit<Product, 'id'>) => Promise<void>;
+  addProduct: (product: Omit<Product, 'id' | 'createdAt' | 'updatedAt'>) => Promise<void>;
   updateProduct: (id: string, product: Partial<Product>) => Promise<void>;
   deleteProduct: (id: string) => Promise<void>;
 

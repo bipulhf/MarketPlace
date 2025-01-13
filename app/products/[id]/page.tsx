@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'react';
 import { useParams } from 'next/navigation';
 import { useStore } from '@/lib/store';
-import { Product } from '@/lib/types';
+import { Product, User } from '@/lib/types';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import Image from 'next/image';
@@ -11,6 +11,7 @@ import Image from 'next/image';
 export default function ProductPage() {
   const params = useParams();
   const [product, setProduct] = useState<Product | null>(null);
+  const [seller, setSeller] = useState<User | null>(null);
   const { fetchProductDetails, addToCart, currentUser } = useStore();
 
   useEffect(() => {
@@ -19,6 +20,16 @@ export default function ProductPage() {
         const data = await fetchProductDetails(params.id as string);
         if (data) {
           setProduct(data);
+          // Fetch seller information
+          try {
+            const response = await fetch(`/api/users/${data.sellerId}`);
+            if (response.ok) {
+              const sellerData = await response.json();
+              setSeller(sellerData);
+            }
+          } catch (error) {
+            console.error('Error fetching seller:', error);
+          }
         }
       }
     };
@@ -51,7 +62,7 @@ export default function ProductPage() {
           <div className="space-y-4">
             <div>
               <h3 className="font-semibold">Price</h3>
-              <p className="text-2xl font-bold">${product.price.toFixed(2)}</p>
+              <p className="text-2xl font-bold">৳{product.price.toFixed(2)}</p>
             </div>
             <div>
               <h3 className="font-semibold">Description</h3>
@@ -59,13 +70,13 @@ export default function ProductPage() {
             </div>
             <div>
               <h3 className="font-semibold">Seller</h3>
-              <p className="text-gray-600">{product.seller?.name || 'Unknown Seller'}</p>
+              <p className="text-gray-600">{seller?.name || 'Loading seller information...'}</p>
             </div>
           </div>
         </CardContent>
         <CardFooter>
           <Button
-            onClick={() => addToCart({ productId: product.id, quantity: 1 })}
+            onClick={() => addToCart(product, 1)}
             disabled={!currentUser || currentUser.id === product.sellerId}
             className="w-full"
           >

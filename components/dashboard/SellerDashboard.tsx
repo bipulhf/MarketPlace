@@ -1,21 +1,14 @@
-"use client";
+'use client';
 
 import { useState, useEffect } from 'react';
 import { useStore } from '@/lib/store';
-import { Product, Order } from '@/lib/types';
+import { Product, Order, OrderStatus, CartItem } from '@/lib/types';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Plus, Edit, Trash2, Package, Loader2, BarChart } from 'lucide-react';
 import { getProductImage } from '@/lib/imageUtils';
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
 import {
   Line,
   Bar
@@ -51,6 +44,13 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 
 ChartJS.register(
   CategoryScale,
@@ -63,12 +63,22 @@ ChartJS.register(
   Legend
 );
 
+interface OrderItemWithProduct extends CartItem {
+  product: Product;
+}
+
+interface OrderWithProducts extends Order {
+  items: OrderItemWithProduct[];
+}
+
+interface NewProduct {
+  name?: string;
+  price?: number;
+  description?: string;
+}
+
 export default function SellerDashboard() {
-  const [newProduct, setNewProduct] = useState<{
-    name?: string;
-    price?: number;
-    description?: string;
-  }>({});
+  const [newProduct, setNewProduct] = useState<NewProduct>({});
   const [editingProduct, setEditingProduct] = useState<Product | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const currentUser = useStore(state => state.currentUser);
@@ -79,12 +89,14 @@ export default function SellerDashboard() {
   const deleteProduct = useStore(state => state.deleteProduct);
   const updateOrderStatus = useStore(state => state.updateOrderStatus);
   const fetchProducts = useStore(state => state.fetchProducts);
+  const fetchSellerOrders = useStore(state => state.fetchSellerOrders);
 
   useEffect(() => {
     if (currentUser?.role === 'seller') {
       fetchProducts();
+      fetchSellerOrders();
     }
-  }, [currentUser]);
+  }, [currentUser, fetchProducts, fetchSellerOrders]);
 
   const handleAddProduct = async () => {
     if (currentUser && newProduct.name && newProduct.price) {
@@ -97,8 +109,6 @@ export default function SellerDashboard() {
           description: newProduct.description || '',
           image: imageUrl,
           sellerId: currentUser.id,
-          createdAt: new Date(),
-          updatedAt: new Date()
         });
         setNewProduct({});
       } catch (error) {
@@ -114,7 +124,12 @@ export default function SellerDashboard() {
       setIsLoading(true);
       try {
         const imageUrl = await getProductImage(editingProduct.name);
-        updateProduct(editingProduct.id, { ...editingProduct, image: imageUrl });
+        await updateProduct(editingProduct.id, { 
+          name: editingProduct.name,
+          price: editingProduct.price,
+          description: editingProduct.description,
+          image: imageUrl,
+        });
         setEditingProduct(null);
       } catch (error) {
         console.error('Error updating product:', error);
@@ -137,6 +152,38 @@ export default function SellerDashboard() {
     }
   };
 
+  // Transform orders to include product information
+  const ordersWithProducts: OrderWithProducts[] = sellerOrders.map(order => ({
+    ...order,
+    items: order.items.map(item => ({
+      ...item,
+      product: products.find(p => p.id === item.productId)!
+    }))
+  }));
+
+  // Calculate analytics data
+  const analyticsData = {
+    ordersByStatus: {
+      pending: ordersWithProducts.filter(o => o.status === 'pending').length,
+      accepted: ordersWithProducts.filter(o => o.status === 'accepted').length,
+      shipping: ordersWithProducts.filter(o => o.status === 'shipping').length,
+      delivered: ordersWithProducts.filter(o => o.status === 'delivered').length
+    },
+    revenue: ordersWithProducts.reduce((total, order) => 
+      total + order.items.reduce((sum, item) => 
+        sum + (item.product.price * item.quantity), 0
+      ), 0
+    ),
+    revenueByDate: ordersWithProducts
+      .sort((a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime())
+      .map(order => ({
+        date: new Date(order.createdAt).toLocaleDateString(),
+        revenue: order.items.reduce((sum, item) => 
+          sum + (item.product.price * item.quantity), 0
+        )
+      }))
+  };
+
   return (
     <div className="space-y-8">
       <Tabs defaultValue="products">
@@ -147,9 +194,7 @@ export default function SellerDashboard() {
         </TabsList>
 
         <TabsContent value="products">
-          {/* Products tab content */}
           <div className="grid gap-4">
-            {/* Add Product Dialog */}
             <Dialog>
               <DialogTrigger asChild>
                 <Button>
@@ -215,7 +260,69 @@ export default function SellerDashboard() {
               </DialogContent>
             </Dialog>
 
-            {/* Product List */}
+            {/* Edit Product Dialog */}
+            <Dialog open={!!editingProduct} onOpenChange={(open) => !open && setEditingProduct(null)}>
+              <DialogContent>
+                <DialogHeader>
+                  <DialogTitle>Edit Product</DialogTitle>
+                </DialogHeader>
+                <div className="space-y-4 py-4">
+                  <Input
+                    placeholder="Product Name"
+                    value={editingProduct?.name || ''}
+                    onChange={(e) =>
+                      editingProduct && setEditingProduct({
+                        ...editingProduct,
+                        name: e.target.value,
+                      })
+                    }
+                  />
+                  <Input
+                    type="number"
+                    placeholder="Price"
+                    value={editingProduct?.price || ''}
+                    onChange={(e) =>
+                      editingProduct && setEditingProduct({
+                        ...editingProduct,
+                        price: parseFloat(e.target.value),
+                      })
+                    }
+                  />
+                  <Input
+                    placeholder="Description"
+                    value={editingProduct?.description || ''}
+                    onChange={(e) =>
+                      editingProduct && setEditingProduct({
+                        ...editingProduct,
+                        description: e.target.value,
+                      })
+                    }
+                  />
+                </div>
+                <DialogFooter>
+                  <Button variant="outline" onClick={() => setEditingProduct(null)}>
+                    Cancel
+                  </Button>
+                  <Button
+                    onClick={handleEditProduct}
+                    disabled={isLoading || !editingProduct?.name || !editingProduct?.price}
+                  >
+                    {isLoading ? (
+                      <>
+                        <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                        Updating...
+                      </>
+                    ) : (
+                      <>
+                        <Edit className="w-4 h-4 mr-2" />
+                        Update Product
+                      </>
+                    )}
+                  </Button>
+                </DialogFooter>
+              </DialogContent>
+            </Dialog>
+
             <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
               {products.map((product) => (
                 <Card key={product.id} className="overflow-hidden">
@@ -231,7 +338,7 @@ export default function SellerDashboard() {
                       <div>
                         <h3 className="font-semibold">{product.name}</h3>
                         <p className="text-sm text-gray-500">
-                          ${product.price.toFixed(2)}
+                          ৳{product.price.toFixed(2)}
                         </p>
                       </div>
                       <div className="flex gap-2">
@@ -281,9 +388,8 @@ export default function SellerDashboard() {
         </TabsContent>
 
         <TabsContent value="orders">
-          {/* Orders tab content */}
           <div className="space-y-4">
-            {sellerOrders.map((order) => (
+            {ordersWithProducts.map((order) => (
               <Card key={order.id}>
                 <CardContent className="p-6">
                   <div className="flex justify-between items-start mb-4">
@@ -292,16 +398,13 @@ export default function SellerDashboard() {
                       <p className="text-sm text-gray-500">
                         {new Date(order.createdAt).toLocaleDateString()}
                       </p>
-                      <p className="text-sm">
-                        Buyer: {order.buyer.name} ({order.buyer.email})
-                      </p>
                     </div>
                     <div className="flex items-center gap-4">
                       <span className="text-sm font-medium">Status:</span>
                       <Select
                         value={order.status}
                         onValueChange={(value) =>
-                          updateOrderStatus(order.id, value as Order['status'])
+                          updateOrderStatus(order.id, value as OrderStatus)
                         }
                       >
                         <SelectTrigger className="w-[180px]">
@@ -319,7 +422,7 @@ export default function SellerDashboard() {
                   <div className="space-y-2">
                     {order.items.map((item) => (
                       <div
-                        key={item.id}
+                        key={item.productId}
                         className="flex justify-between items-center py-2 border-t"
                       >
                         <div className="flex items-center gap-4">
@@ -336,14 +439,14 @@ export default function SellerDashboard() {
                           </div>
                         </div>
                         <p className="font-medium">
-                          ${(item.product.price * item.quantity).toFixed(2)}
+                        ৳{(item.product.price * item.quantity).toFixed(2)}
                         </p>
                       </div>
                     ))}
                   </div>
                   <div className="mt-4 pt-4 border-t flex justify-end">
                     <p className="font-semibold">
-                      Total: $
+                      Total: ৳
                       {order.items
                         .reduce(
                           (sum, item) => sum + item.product.price * item.quantity,
@@ -359,7 +462,6 @@ export default function SellerDashboard() {
         </TabsContent>
 
         <TabsContent value="analytics">
-          {/* Analytics tab content */}
           <div className="grid gap-8 md:grid-cols-2">
             <Card>
               <CardContent className="p-6">
@@ -371,10 +473,10 @@ export default function SellerDashboard() {
                       {
                         label: 'Orders',
                         data: [
-                          sellerOrders.filter((o) => o.status === 'accepted').length,
-                          sellerOrders.filter((o) => o.status === 'pending').length,
-                          sellerOrders.filter((o) => o.status === 'shipping').length,
-                          sellerOrders.filter((o) => o.status === 'delivered').length,
+                          analyticsData.ordersByStatus.accepted,
+                          analyticsData.ordersByStatus.pending,
+                          analyticsData.ordersByStatus.shipping,
+                          analyticsData.ordersByStatus.delivered,
                         ],
                         backgroundColor: [
                           'rgba(255, 159, 64, 0.5)',
@@ -411,20 +513,11 @@ export default function SellerDashboard() {
                 <h3 className="font-semibold mb-4">Revenue Over Time</h3>
                 <Line
                   data={{
-                    labels: sellerOrders
-                      .sort((a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime())
-                      .map((o) => new Date(o.createdAt).toLocaleDateString()),
+                    labels: analyticsData.revenueByDate.map(d => d.date),
                     datasets: [
                       {
                         label: 'Revenue',
-                        data: sellerOrders
-                          .sort((a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime())
-                          .map((o) =>
-                            o.items.reduce(
-                              (sum, item) => sum + item.product.price * item.quantity,
-                              0
-                            )
-                          ),
+                        data: analyticsData.revenueByDate.map(d => d.revenue),
                         borderColor: 'rgb(75, 192, 192)',
                         tension: 0.1,
                       },

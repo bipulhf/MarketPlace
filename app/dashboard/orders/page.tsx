@@ -5,9 +5,18 @@ import { useStore } from '@/lib/store';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { format } from 'date-fns';
+import { Order, CartItem, Product } from '@/lib/types';
+
+interface OrderItemWithProduct extends CartItem {
+  product: Product;
+}
+
+interface OrderWithProducts extends Order {
+  items: OrderItemWithProduct[];
+}
 
 export default function OrdersPage() {
-  const { currentUser, buyerOrders, fetchBuyerOrders } = useStore();
+  const { currentUser, buyerOrders, fetchBuyerOrders, products } = useStore();
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
@@ -18,7 +27,7 @@ export default function OrdersPage() {
       setIsLoading(false);
     };
     loadOrders();
-  }, [currentUser]);  
+  }, [currentUser, fetchBuyerOrders]);  
 
   if (!currentUser) {
     return (
@@ -36,20 +45,29 @@ export default function OrdersPage() {
     );
   }
 
+  // Transform orders to include product information
+  const ordersWithProducts: OrderWithProducts[] = buyerOrders.map(order => ({
+    ...order,
+    items: order.items.map(item => ({
+      ...item,
+      product: products.find(p => p.id === item.productId)!
+    }))
+  }));
+
   return (
     <div className="container mx-auto p-4">
       <h1 className="text-2xl font-bold mb-4">My Orders</h1>
       <div className="grid gap-4">
-        {buyerOrders && buyerOrders.length > 0 ? (
-          buyerOrders.map((order) => (
+        {ordersWithProducts && ordersWithProducts.length > 0 ? (
+          ordersWithProducts.map((order) => (
             <Card key={order.id}>
               <CardHeader>
                 <CardTitle className="flex justify-between items-center">
                   <span>Order #{order.id.slice(0, 8)}</span>
                   <Badge variant={
-                    order.status === 'completed' ? 'default' :
+                    order.status === 'accepted' ? 'default' :
                     order.status === 'pending' ? 'secondary' :
-                    order.status === 'processing' ? 'default' :
+                    order.status === 'delivered' ? 'default' :
                     'destructive'
                   }>
                     {order.status}
@@ -64,25 +82,22 @@ export default function OrdersPage() {
                       Placed on {format(new Date(order.createdAt), 'yyyy-MM-dd')}
                     </p>
                     <p className="text-sm text-gray-600">
-                      Total: ${order.total.toFixed(2)}
+                      Total: ৳{order.total.toFixed(2)}
                     </p>
                   </div>
                   <div>
                     <h3 className="font-semibold">Items</h3>
                     <div className="space-y-2">
                       {order.items.map((item) => (
-                        <div key={item.id} className="flex justify-between items-center">
+                        <div key={item.productId} className="flex justify-between items-center">
                           <div>
                             <p className="font-medium">{item.product.name}</p>
                             <p className="text-sm text-gray-600">
                               Quantity: {item.quantity}
                             </p>
-                            <p className="text-sm text-gray-600">
-                              Seller: {item.product.seller?.name || 'Unknown Seller'}
-                            </p>
                           </div>
                           <p className="font-medium">
-                            ${(item.product.price * item.quantity).toFixed(2)}
+                          ৳{(item.product.price * item.quantity).toFixed(2)}
                           </p>
                         </div>
                       ))}

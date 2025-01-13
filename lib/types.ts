@@ -1,11 +1,12 @@
-export type UserRole = 'buyer' | 'seller' | 'delivery';
+export type UserRole = 'buyer' | 'seller';
 
 export interface User {
   id: string;
   email: string;
-  password: string;
   name: string;
   role: UserRole;
+  createdAt: Date;
+  updatedAt: Date;
 }
 
 export interface Product {
@@ -13,8 +14,10 @@ export interface Product {
   name: string;
   price: number;
   description: string;
-  sellerId: string;
   image: string;
+  sellerId: string;
+  createdAt: Date;
+  updatedAt: Date;
 }
 
 export interface CartItem {
@@ -27,10 +30,10 @@ export type OrderStatus = 'pending' | 'accepted' | 'shipping' | 'delivered';
 export interface Order {
   id: string;
   buyerId: string;
+  sellerId: string;
   items: CartItem[];
   status: OrderStatus;
-  sellerId: string;
-  deliveryManId?: string;
-  createdAt: string;
   total: number;
+  createdAt: Date;
+  updatedAt: Date;
 }

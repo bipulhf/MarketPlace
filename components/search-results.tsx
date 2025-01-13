@@ -1,11 +1,11 @@
 'use client';
 
-import { Card, CardContent, CardFooter } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
 import { useRouter } from 'next/navigation';
-import Image from 'next/image';
 import { Product } from '@/lib/types';
 import { useStore } from '@/lib/store';
+import { Button } from '@/components/ui/button';
+import { Card } from '@/components/ui/card';
+import { ShoppingCart } from 'lucide-react';
 import { toast } from 'sonner';
 
 interface SearchResultsProps {
@@ -15,74 +15,62 @@ interface SearchResultsProps {
 export function SearchResults({ results }: SearchResultsProps) {
   const router = useRouter();
   const addToCart = useStore((state) => state.addToCart);
-  const currentUser = useStore((state) => state.currentUser);
 
-  if (results.length === 0) {
-    return null;
+  if (!results.length) {
+    return (
+      <div className="text-center py-12">
+        <p className="text-muted-foreground">No products found</p>
+      </div>
+    );
   }
 
-  const handleAddToCart = (productId: string) => {
-    if (!currentUser) {
-      toast.error('Please login to add items to cart');
-      router.push('/login');
+  const handleAddToCart = async (product: Product) => {
+    if (!product) {
       return;
     }
     
-    addToCart(productId, 1);
+    addToCart(product, 1);
     toast.success('Added to cart successfully');
   };
 
   return (
-    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 py-8">
       {results.map((product) => (
-        <Card key={product.id} className="overflow-hidden">
-          <CardContent className="p-4">
-            <div 
-              className="aspect-square relative mb-4 bg-muted rounded-lg cursor-pointer"
-              onClick={() => router.push(`/product/${product.id}`)}
-            >
-              {product.image ? (
-                <Image
-                  src={product.image}
-                  alt={product.name}
-                  fill
-                  className="object-cover"
-                />
-              ) : (
-                <div className="w-full h-full flex items-center justify-center text-muted-foreground">
-                  No image
-                </div>
-              )}
-            </div>
-            <div>
-              <h3 
-                className="font-semibold text-lg truncate cursor-pointer hover:text-primary"
+        <Card
+          key={product.id}
+          className="overflow-hidden hover:shadow-lg transition-shadow"
+        >
+          <div
+            className="aspect-video relative cursor-pointer"
+            onClick={() => router.push(`/product/${product.id}`)}
+          >
+            <img
+              src={product.image}
+              alt={product.name}
+              className="object-cover w-full h-full"
+            />
+          </div>
+          <div className="p-4">
+            <div className="flex justify-between items-start mb-4">
+              <h3
+                className="font-semibold hover:underline cursor-pointer"
                 onClick={() => router.push(`/product/${product.id}`)}
               >
                 {product.name}
               </h3>
               <p className="font-medium">৳{product.price.toFixed(2)}</p>
-              <p className="text-sm text-muted-foreground line-clamp-2 mt-2">
-                {product.description}
-              </p>
             </div>
-          </CardContent>
-          <CardFooter className="p-4 pt-0 flex gap-2">
+            <p className="text-sm text-muted-foreground line-clamp-2 mt-2">
+              {product.description}
+            </p>
             <Button
-              variant="secondary"
-              className="flex-1"
-              onClick={() => router.push(`/product/${product.id}`)}
+              className="w-full mt-4"
+              onClick={() => handleAddToCart(product)}
             >
-              View Details
-            </Button>
-            <Button
-              variant="default"
-              className="flex-1"
-              onClick={() => handleAddToCart(product.id)}
-            >
+              <ShoppingCart className="mr-2 h-4 w-4" />
               Add to Cart
             </Button>
-          </CardFooter>
+          </div>
         </Card>
       ))}
     </div>

@@ -30,7 +30,7 @@ export default function PaymentSuccessPage() {
             <p className="text-gray-600 mb-6">
               Thank you for your purchase. Your order has been confirmed.
             </p>
-            <Button onClick={() => router.push('/orders')} className="w-full">
+            <Button onClick={() => router.push('/dashboard/orders')} className="w-full">
               View Orders
             </Button>
           </Card>

@@ -7,7 +7,7 @@ import { useRequireAuth } from '@/hooks/useRequireAuth';
 import { motion, AnimatePresence } from 'framer-motion';
 
 export default function CartPage() {
-  const { cart, products, removeFromCart, updateCartQuantity } = useStore();
+  const { cart, products, removeFromCart, updateCartItemQuantity } = useStore();
   const router = useRouter();
   const { isLoading, user } = useRequireAuth('buyer');
 
@@ -109,7 +109,7 @@ export default function CartPage() {
                   <Button
                     variant="outline"
                     size="sm"
-                    onClick={() => updateCartQuantity(item.productId, Math.max(1, item.quantity - 1))}
+                    onClick={() => updateCartItemQuantity(item.productId, Math.max(1, item.quantity - 1))}
                   >
                     -
                   </Button>
@@ -117,7 +117,7 @@ export default function CartPage() {
                   <Button
                     variant="outline"
                     size="sm"
-                    onClick={() => updateCartQuantity(item.productId, item.quantity + 1)}
+                    onClick={() => updateCartItemQuantity(item.productId, item.quantity + 1)}
                   >
                     +
                   </Button>
