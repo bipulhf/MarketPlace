@@ -217,7 +217,7 @@ export default function SellerDashboard() {
     }
   };
 
-    // Update the ordersWithProducts mapping
+  // Update the ordersWithProducts mapping
   const ordersWithProducts = sellerOrders.map((order) => ({
     ...order,
     items: order.items.map((item) => ({
@@ -250,41 +250,41 @@ export default function SellerDashboard() {
 
   return (
     <Tabs defaultValue="products" className="w-full">
-      <TabsList className="grid w-full grid-cols-3">
-        <TabsTrigger value="products">Products</TabsTrigger>
-        <TabsTrigger value="orders">Manage Orders</TabsTrigger>
-        <TabsTrigger value="analytics">Analytics</TabsTrigger>
+      <TabsList className="grid w-full grid-cols-3 mb-4">
+        <TabsTrigger value="products" className="text-sm sm:text-base">Products</TabsTrigger>
+        <TabsTrigger value="orders" className="text-sm sm:text-base">Manage Orders</TabsTrigger>
+        <TabsTrigger value="analytics" className="text-sm sm:text-base">Analytics</TabsTrigger>
       </TabsList>
 
       <TabsContent value="products">
-        <div className="space-y-6">
+        <div className="space-y-4 sm:space-y-6">
           {/* Analytics Cards */}
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
             {/* Total Products */}
-            <Card className="p-6">
+            <Card className="p-4 sm:p-6">
               <div className="flex items-center">
-                <Package className="w-8 h-8 text-primary" />
-                <div className="ml-4">
-                  <p className="text-sm font-medium text-gray-500">Total Products</p>
-                  <h3 className="text-2xl font-bold">{products.length}</h3>
+                <Package className="w-6 h-6 sm:w-8 sm:h-8 text-primary" />
+                <div className="ml-3 sm:ml-4">
+                  <p className="text-xs sm:text-sm font-medium text-gray-500">Total Products</p>
+                  <h3 className="text-lg sm:text-2xl font-bold">{products.length}</h3>
                 </div>
               </div>
             </Card>
 
             {/* Current Month Sales */}
-            <Card className="p-6">
+            <Card className="p-4 sm:p-6">
               <div className="flex items-center">
-                <TrendingUp className="w-8 h-8 text-green-500" />
-                <div className="ml-4">
-                  <p className="text-sm font-medium text-gray-500">Current Month Sales</p>
+                <TrendingUp className="w-6 h-6 sm:w-8 sm:h-8 text-green-500" />
+                <div className="ml-3 sm:ml-4">
+                  <p className="text-xs sm:text-sm font-medium text-gray-500">Current Month Sales</p>
                   {isLoadingAnalytics ? (
                     <Loader2 className="w-4 h-4 animate-spin" />
                   ) : (
                     <>
-                      <h3 className="text-2xl font-bold">
+                      <h3 className="text-lg sm:text-2xl font-bold">
                         ৳{analytics?.currentMonth.total.toFixed(2) || '0.00'}
                       </h3>
-                      <p className="text-sm text-gray-500">
+                      <p className="text-xs sm:text-sm text-gray-500">
                         {analytics?.currentMonth.orderCount || 0} orders
                       </p>
                     </>
@@ -294,19 +294,19 @@ export default function SellerDashboard() {
             </Card>
 
             {/* Lifetime Sales */}
-            <Card className="p-6">
+            <Card className="p-4 sm:p-6">
               <div className="flex items-center">
-                <DollarSign className="w-8 h-8 text-blue-500" />
-                <div className="ml-4">
-                  <p className="text-sm font-medium text-gray-500">Lifetime Sales</p>
+                <DollarSign className="w-6 h-6 sm:w-8 sm:h-8 text-blue-500" />
+                <div className="ml-3 sm:ml-4">
+                  <p className="text-xs sm:text-sm font-medium text-gray-500">Lifetime Sales</p>
                   {isLoadingAnalytics ? (
                     <Loader2 className="w-4 h-4 animate-spin" />
                   ) : (
                     <>
-                      <h3 className="text-2xl font-bold">
+                      <h3 className="text-lg sm:text-2xl font-bold">
                         ৳{analytics?.lifetime.total.toFixed(2) || '0.00'}
                       </h3>
-                      <p className="text-sm text-gray-500">
+                      <p className="text-xs sm:text-sm text-gray-500">
                         {analytics?.lifetime.orderCount || 0} orders
                       </p>
                     </>
@@ -317,16 +317,16 @@ export default function SellerDashboard() {
           </div>
 
           {/* Products Section */}
-          <div className="flex justify-between items-center mb-6">
-            <h2 className="text-2xl font-bold">Your Products</h2>
+          <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 sm:gap-0 mb-4 sm:mb-6">
+            <h2 className="text-xl sm:text-2xl font-bold">Your Products</h2>
             <Dialog>
               <DialogTrigger asChild>
-                <Button>
+                <Button className="w-full sm:w-auto">
                   <Plus className="w-4 h-4 mr-2" />
                   Add Product
                 </Button>
               </DialogTrigger>
-              <DialogContent>
+              <DialogContent className="sm:max-w-[425px]">
                 <DialogHeader>
                   <DialogTitle>Add New Product</DialogTitle>
                 </DialogHeader>
@@ -362,11 +362,12 @@ export default function SellerDashboard() {
                 </div>
                 <DialogFooter>
                   <DialogClose asChild>
-                    <Button variant="outline">Cancel</Button>
+                    <Button variant="outline" className="w-full sm:w-auto">Cancel</Button>
                   </DialogClose>
                   <Button
                     onClick={handleAddProduct}
                     disabled={isLoading || !newProduct.name || !newProduct.price}
+                    className="w-full sm:w-auto"
                   >
                     {isLoading ? (
                       <>
@@ -385,10 +386,10 @@ export default function SellerDashboard() {
             </Dialog>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
             {products.map((product) => (
               <Card key={product.id} className="overflow-hidden">
-                <div className="aspect-video relative">
+                <div className="aspect-square sm:aspect-video relative">
                   <img
                     src={product.image}
                     alt={product.name}
@@ -399,23 +400,25 @@ export default function SellerDashboard() {
                       size="icon"
                       variant="secondary"
                       onClick={() => setEditingProduct(product)}
+                      className="w-8 h-8 sm:w-10 sm:h-10"
                     >
-                      <Edit className="w-4 h-4" />
+                      <Edit className="w-4 h-4 sm:w-5 sm:h-5" />
                     </Button>
                     <Button
                       size="icon"
                       variant="destructive"
                       onClick={() => handleDeleteProduct(product.id)}
+                      className="w-8 h-8 sm:w-10 sm:h-10"
                     >
-                      <Trash2 className="w-4 h-4" />
+                      <Trash2 className="w-4 h-4 sm:w-5 sm:h-5" />
                     </Button>
                   </div>
                 </div>
-                <div className="p-4">
-                  <h3 className="font-semibold mb-2">{product.name}</h3>
-                  <p className="text-gray-600 mb-2">{product.description}</p>
+                <div className="p-3 sm:p-4">
+                  <h3 className="font-semibold text-sm sm:text-base mb-1 sm:mb-2">{product.name}</h3>
+                  <p className="text-gray-600 text-xs sm:text-sm mb-2">{product.description}</p>
                   <div className="flex justify-between items-center">
-                    <p className="font-bold">৳{product.price.toFixed(2)}</p>
+                    <p className="font-bold text-sm sm:text-base">৳{product.price.toFixed(2)}</p>
                   </div>
                 </div>
               </Card>
@@ -425,30 +428,31 @@ export default function SellerDashboard() {
       </TabsContent>
 
       <TabsContent value="orders">
-          <div className="space-y-4">
-            {ordersWithProducts.length <= 0 ? 
-            <div className="text-center py-12">
-              <p className="text-muted-foreground">No orders found</p>
+        <div className="space-y-4">
+          {ordersWithProducts.length <= 0 ? (
+            <div className="text-center py-8 sm:py-12">
+              <p className="text-muted-foreground text-sm sm:text-base">No orders found</p>
             </div>
-            :ordersWithProducts.map((order) => (
+          ) : (
+            ordersWithProducts.map((order) => (
               <Card key={order.id}>
-                <CardContent className="p-6">
-                  <div className="flex justify-between items-start mb-4">
+                <CardContent className="p-3 sm:p-6">
+                  <div className="flex flex-col sm:flex-row justify-between items-start gap-4 mb-4">
                     <div>
-                      <h3 className="font-semibold">Order #{order.id.slice(-8)}</h3>
-                      <p className="text-sm text-gray-500">
+                      <h3 className="font-semibold text-sm sm:text-base">Order #{order.id.slice(-8)}</h3>
+                      <p className="text-xs sm:text-sm text-gray-500">
                         {new Date(order.createdAt).toLocaleDateString()}
                       </p>
                     </div>
-                    <div className="flex items-center gap-4">
-                      <span className="text-sm font-medium">Status:</span>
+                    <div className="flex flex-col sm:flex-row items-start sm:items-center gap-2 sm:gap-4 w-full sm:w-auto">
+                      <span className="text-xs sm:text-sm font-medium">Status:</span>
                       <Select
                         value={order.status}
                         onValueChange={(value) =>
                           updateOrderStatus(order.id, value as OrderStatus)
                         }
                       >
-                        <SelectTrigger className="w-[180px]">
+                        <SelectTrigger className="w-full sm:w-[180px] text-xs sm:text-sm">
                           <SelectValue placeholder="Select status" />
                         </SelectTrigger>
                         <SelectContent>
@@ -464,29 +468,29 @@ export default function SellerDashboard() {
                     {order.items.map((item) => (
                       <div
                         key={item.productId}
-                        className="flex justify-between items-center py-2 border-t"
+                        className="flex flex-col sm:flex-row justify-between items-start sm:items-center py-2 border-t gap-3 sm:gap-0"
                       >
-                        <div className="flex items-center gap-4">
+                        <div className="flex items-center gap-3 sm:gap-4 w-full sm:w-auto">
                           <img
                             src={item.product?.image}
                             alt={item.product?.name}
-                            className="w-12 h-12 object-cover rounded"
+                            className="w-10 h-10 sm:w-12 sm:h-12 object-cover rounded"
                           />
                           <div>
-                            <p className="font-medium">{item.product?.name}</p>
-                            <p className="text-sm text-gray-500">
+                            <p className="font-medium text-sm sm:text-base">{item.product?.name}</p>
+                            <p className="text-xs sm:text-sm text-gray-500">
                               Quantity: {item.quantity}
                             </p>
                           </div>
                         </div>
-                        <p className="font-medium">
-                        ৳{((item.product?.price || 0) * item.quantity).toFixed(2)}
+                        <p className="font-medium text-sm sm:text-base ml-13 sm:ml-0">
+                          ৳{((item.product?.price || 0) * item.quantity).toFixed(2)}
                         </p>
                       </div>
                     ))}
                   </div>
-                  <div className="mt-4 pt-4 border-t flex justify-end">
-                    <p className="font-semibold">
+                  <div className="mt-3 sm:mt-4 pt-3 sm:pt-4 border-t flex justify-end">
+                    <p className="font-semibold text-sm sm:text-base">
                       Total: ৳
                       {order.items
                         .reduce(
@@ -498,16 +502,17 @@ export default function SellerDashboard() {
                   </div>
                 </CardContent>
               </Card>
-            ))}
-          </div>
-        </TabsContent>
+            ))
+          )}
+        </div>
+      </TabsContent>
 
-
-        <TabsContent value="analytics">
-          <div className="grid gap-8 md:grid-cols-2">
-            <Card>
-              <CardContent className="p-6">
-                <h3 className="font-semibold mb-4">Orders by Status</h3>
+      <TabsContent value="analytics">
+        <div className="grid gap-4 sm:gap-8 md:grid-cols-2">
+          <Card>
+            <CardContent className="p-3 sm:p-6">
+              <h3 className="font-semibold text-sm sm:text-base mb-3 sm:mb-4">Orders by Status</h3>
+              <div className="w-full aspect-square sm:aspect-[4/3]">
                 <Bar
                   data={{
                     labels: ['Pending', 'Processing', 'Shipped', 'Delivered'],
@@ -525,14 +530,12 @@ export default function SellerDashboard() {
                           'rgba(54, 162, 235, 0.5)',
                           'rgba(75, 192, 192, 0.5)',
                           'rgba(153, 102, 255, 0.5)',
-                          'rgba(255, 99, 132, 0.5)',
                         ],
                         borderColor: [
                           'rgb(255, 159, 64)',
                           'rgb(54, 162, 235)',
                           'rgb(75, 192, 192)',
                           'rgb(153, 102, 255)',
-                          'rgb(255, 99, 132)',
                         ],
                         borderWidth: 1,
                       },
@@ -540,6 +543,7 @@ export default function SellerDashboard() {
                   }}
                   options={{
                     responsive: true,
+                    maintainAspectRatio: true,
                     plugins: {
                       legend: {
                         display: false,
@@ -547,12 +551,14 @@ export default function SellerDashboard() {
                     },
                   }}
                 />
-              </CardContent>
-            </Card>
+              </div>
+            </CardContent>
+          </Card>
 
-            <Card>
-              <CardContent className="p-6">
-                <h3 className="font-semibold mb-4">Revenue Over Time</h3>
+          <Card>
+            <CardContent className="p-3 sm:p-6">
+              <h3 className="font-semibold text-sm sm:text-base mb-3 sm:mb-4">Revenue Over Time</h3>
+              <div className="w-full aspect-square sm:aspect-[4/3]">
                 <Line
                   data={{
                     labels: analyticsData.revenueByDate.map(d => d.date),
@@ -567,6 +573,7 @@ export default function SellerDashboard() {
                   }}
                   options={{
                     responsive: true,
+                    maintainAspectRatio: true,
                     plugins: {
                       legend: {
                         display: false,
@@ -574,16 +581,17 @@ export default function SellerDashboard() {
                     },
                   }}
                 />
-              </CardContent>
-            </Card>
-          </div>
-        </TabsContent>
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+      </TabsContent>
 
       {/* Edit Product Dialog */}
       <Dialog open={!!editingProduct} onOpenChange={(open) => !open && setEditingProduct(null)}>
-        <DialogContent>
+        <DialogContent className="sm:max-w-[425px]">
           <DialogHeader>
-            <DialogTitle>Edit Product</DialogTitle>
+            <DialogTitle className="text-lg sm:text-xl">Edit Product</DialogTitle>
           </DialogHeader>
           <div className="space-y-4 py-4">
             <Input
@@ -618,13 +626,18 @@ export default function SellerDashboard() {
               }
             />
           </div>
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setEditingProduct(null)}>
+          <DialogFooter className="flex-col sm:flex-row gap-2 sm:gap-0">
+            <Button 
+              variant="outline" 
+              onClick={() => setEditingProduct(null)}
+              className="w-full sm:w-auto"
+            >
               Cancel
             </Button>
             <Button
               onClick={handleEditProduct}
               disabled={isLoading || !editingProduct?.name || !editingProduct?.price}
+              className="w-full sm:w-auto"
             >
               {isLoading ? (
                 <>

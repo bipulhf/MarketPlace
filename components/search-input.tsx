@@ -18,7 +18,7 @@ export function SearchInput() {
   };
 
   return (
-    <form onSubmit={handleSubmit} className="flex w-full max-w-sm items-center space-x-2">
+    <form onSubmit={handleSubmit} className="flex w-full max-w-sm items-center space-x-2 px-4 sm:px-0">
       <Input
         type="search"
         placeholder="Search products..."

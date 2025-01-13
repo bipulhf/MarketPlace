@@ -60,38 +60,39 @@ export default function Home() {
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
         transition={{ duration: 0.8 }}
-        className="relative h-[80vh] flex items-center justify-center bg-gradient-to-r from-primary/10 to-secondary/10"
+        className="relative min-h-[60vh] sm:h-[80vh] flex items-center justify-center bg-gradient-to-r from-primary/10 to-secondary/10 py-12 sm:py-0"
       >
         <div className="container mx-auto px-4 grid md:grid-cols-2 gap-8 items-center">
           <motion.div
             initial={{ x: -50, opacity: 0 }}
             animate={{ x: 0, opacity: 1 }}
             transition={{ delay: 0.2, duration: 0.8 }}
-            className="text-left"
+            className="text-center md:text-left"
           >
-            <h1 className="text-5xl md:text-6xl font-bold mb-6 bg-clip-text text-transparent bg-gradient-to-r from-primary to-primary/80">
+            <h1 className="text-4xl sm:text-5xl md:text-6xl font-bold mb-4 sm:mb-6 bg-clip-text text-transparent bg-gradient-to-r from-primary to-primary/80">
               Your Ultimate
               <br />
               Marketplace
             </h1>
-            <p className="text-xl mb-8 text-muted-foreground max-w-xl">
+            <p className="text-lg sm:text-xl mb-6 sm:mb-8 text-muted-foreground max-w-xl mx-auto md:mx-0">
               Whether you're looking to sell your products or find amazing deals,
               we've got you covered. Join our growing community today!
             </p>
-            <div className="flex gap-4">
+            <div className="flex flex-col sm:flex-row gap-4 justify-center md:justify-start">
               <Button 
                 size="lg" 
-                className="bg-primary text-white hover:bg-primary/90"
+                className="bg-primary text-white hover:bg-primary/90 w-full sm:w-auto"
                 onClick={() => router.push('/dashboard')}
               >
-                Start Shopping <ShoppingBag className="ml-2 h-5 w-5" />
+                Start Shopping <ShoppingBag className="ml-2 h-4 w-4 sm:h-5 sm:w-5" />
               </Button>
               <Button 
                 size="lg" 
                 variant="outline"
+                className="w-full sm:w-auto"
                 onClick={() => router.push('/signup?type=seller')}
               >
-                Become a Seller <Store className="ml-2 h-5 w-5" />
+                Become a Seller <Store className="ml-2 h-4 w-4 sm:h-5 sm:w-5" />
               </Button>
             </div>
           </motion.div>
@@ -115,17 +116,17 @@ export default function Home() {
       </motion.section>
 
       {/* Features Section */}
-      <section className="py-20 bg-background">
+      <section className="py-12 sm:py-20 bg-background">
         <div className="container mx-auto px-4">
           <motion.div
             initial={{ y: 20, opacity: 0 }}
             whileInView={{ y: 0, opacity: 1 }}
             transition={{ duration: 0.8 }}
             viewport={{ once: true }}
-            className="text-center mb-16"
+            className="text-center mb-10 sm:mb-16"
           >
-            <h2 className="text-3xl font-bold mb-4">Choose Your Path</h2>
-            <p className="text-muted-foreground max-w-2xl mx-auto">
+            <h2 className="text-2xl sm:text-3xl font-bold mb-3 sm:mb-4">Choose Your Path</h2>
+            <p className="text-sm sm:text-base text-muted-foreground max-w-2xl mx-auto px-4">
               Whether you want to sell your products or shop for great deals,
               we have the perfect solution for you.
             </p>
@@ -161,17 +162,17 @@ export default function Home() {
       </section>
 
       {/* Benefits Section */}
-      <section className="py-20 bg-secondary/10">
+      <section className="py-12 sm:py-20 bg-secondary/10">
         <div className="container mx-auto px-4">
           <motion.div
             initial={{ y: 20, opacity: 0 }}
             whileInView={{ y: 0, opacity: 1 }}
             transition={{ duration: 0.8 }}
             viewport={{ once: true }}
-            className="text-center mb-16"
+            className="text-center mb-10 sm:mb-16"
           >
-            <h2 className="text-3xl font-bold mb-4">Why Choose Us</h2>
-            <p className="text-muted-foreground max-w-2xl mx-auto">
+            <h2 className="text-2xl sm:text-3xl font-bold mb-3 sm:mb-4">Why Choose Us</h2>
+            <p className="text-sm sm:text-base text-muted-foreground max-w-2xl mx-auto px-4">
               Experience the best of online shopping and selling with our feature-rich platform
             </p>
           </motion.div>
@@ -202,19 +203,20 @@ export default function Home() {
         whileInView={{ opacity: 1 }}
         transition={{ duration: 0.8 }}
         viewport={{ once: true }}
-        className="py-20 bg-primary text-white text-center"
+        className="py-12 sm:py-20 bg-primary text-white text-center"
       >
         <div className="container mx-auto px-4">
-          <h2 className="text-3xl md:text-4xl font-bold mb-6">
+          <h2 className="text-2xl sm:text-3xl md:text-4xl font-bold mb-4 sm:mb-6">
             Ready to Get Started?
           </h2>
-          <p className="text-lg mb-8 max-w-2xl mx-auto opacity-90">
+          <p className="text-base sm:text-lg mb-6 sm:mb-8 max-w-2xl mx-auto opacity-90 px-4">
             Join thousands of satisfied users who are already part of our marketplace.
             Start your journey today!
           </p>
           <Button 
             size="lg" 
             variant="secondary"
+            className="w-full sm:w-auto"
             onClick={() => router.push('/signup')}
           >
             Create Your Account

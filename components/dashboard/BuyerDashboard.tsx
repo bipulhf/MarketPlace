@@ -13,13 +13,13 @@ export default function BuyerDashboard() {
   const addToCart = useStore(state => state.addToCart);
 
   return (
-    <div className="container mx-auto px-4 py-8">
-      <h2 className="text-2xl font-bold mb-6">Available Products</h2>
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+    <div className="container mx-auto px-4 py-6 sm:py-8">
+      <h2 className="text-xl sm:text-2xl font-bold mb-4 sm:mb-6">Available Products</h2>
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
         {products.map((product: Product) => (
-          <Card key={product.id} className="p-4">
+          <Card key={product.id} className="p-3 sm:p-4">
             <div 
-              className="aspect-video relative mb-4 hover:cursor-pointer" 
+              className="aspect-square sm:aspect-video relative mb-3 sm:mb-4 hover:cursor-pointer" 
               onClick={() => router.push(`/product/${product.id}`)}
             >
               <img
@@ -29,14 +29,14 @@ export default function BuyerDashboard() {
               />
             </div>
             <div>
-              <h3 className="font-semibold">{product.name}</h3>
-              <p className="text-gray-600">৳{product.price.toFixed(2)}</p>
-              <p className="text-sm text-gray-500 mt-2">{product.description}</p>
+              <h3 className="font-semibold text-sm sm:text-base">{product.name}</h3>
+              <p className="text-gray-600 text-sm sm:text-base">৳{product.price.toFixed(2)}</p>
+              <p className="text-xs sm:text-sm text-gray-500 mt-1 sm:mt-2 line-clamp-2">{product.description}</p>
               <Button
                 onClick={() => addToCart(product, 1)}
-                className="w-full mt-4"
+                className="w-full mt-3 sm:mt-4 text-sm sm:text-base"
               >
-                <ShoppingCart className="mr-2 h-4 w-4" />
+                <ShoppingCart className="mr-2 h-3 w-3 sm:h-4 sm:w-4" />
                 Add to Cart
               </Button>
             </div>

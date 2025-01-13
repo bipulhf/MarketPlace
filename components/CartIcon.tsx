@@ -20,11 +20,12 @@ export default function CartIcon() {
     <Button
       variant="ghost"
       className="relative"
+      size="sm"
       onClick={() => router.push('/cart')}
     >
-      <ShoppingCart className="h-5 w-5" />
+      <ShoppingCart className="h-4 w-4 sm:h-5 sm:w-5" />
       {itemCount > 0 && (
-        <span className="absolute -top-1 -right-1 bg-primary text-primary-foreground text-xs rounded-full h-5 w-5 flex items-center justify-center">
+        <span className="absolute -top-1 -right-1 bg-primary text-primary-foreground text-[10px] sm:text-xs rounded-full h-4 w-4 sm:h-5 sm:w-5 flex items-center justify-center">
           {itemCount}
         </span>
       )}
