@@ -1,14 +1,29 @@
 "use client";
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useStore } from '@/lib/store';
 import { Product, Order } from '@/lib/types';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Plus, Edit, Trash2, Package, Loader2 } from 'lucide-react';
+import { Plus, Edit, Trash2, Package, Loader2, BarChart } from 'lucide-react';
 import { getProductImage } from '@/lib/imageUtils';
+import {
+  Line,
+  Bar
+} from 'react-chartjs-2';
+import {
+  Chart as ChartJS,
+  CategoryScale,
+  LinearScale,
+  PointElement,
+  LineElement,
+  BarElement,
+  Title,
+  Tooltip,
+  Legend
+} from 'chart.js';
 import {
   Dialog,
   DialogClose,
@@ -30,6 +45,17 @@ import {
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
 
+ChartJS.register(
+  CategoryScale,
+  LinearScale,
+  PointElement,
+  LineElement,
+  BarElement,
+  Title,
+  Tooltip,
+  Legend
+);
+
 export default function SellerDashboard() {
   const [newProduct, setNewProduct] = useState<Partial<Product>>({});
   const [editingProduct, setEditingProduct] = useState<Product | null>(null);
@@ -41,6 +67,16 @@ export default function SellerDashboard() {
   const updateProduct = useStore(state => state.updateProduct);
   const deleteProduct = useStore(state => state.deleteProduct);
   const updateOrderStatus = useStore(state => state.updateOrderStatus);
+
+  // Debug function to reset store
+  useEffect(() => {
+    console.log('Current orders:', orders);
+    if (orders.length === 0) {
+      console.log('Resetting localStorage...');
+      localStorage.removeItem('store-storage');
+      window.location.reload();
+    }
+  }, [orders]);
 
   const handleAddProduct = async () => {
     if (currentUser && newProduct.name && newProduct.price) {
@@ -78,11 +114,57 @@ export default function SellerDashboard() {
 
   const sellerOrders = orders.filter(order => order.sellerId === currentUser?.id);
 
+  // Calculate analytics data
+  const totalSales = sellerOrders.reduce((sum, order) => sum + order.total, 0);
+  const totalOrders = sellerOrders.length;
+
+  // Group orders by status
+  const ordersByStatus = sellerOrders.reduce((acc, order) => {
+    acc[order.status] = (acc[order.status] || 0) + 1;
+    return acc;
+  }, {} as Record<string, number>);
+
+  // Prepare data for sales over time chart
+  const salesByDate = sellerOrders.reduce((acc, order) => {
+    const date = new Date(order.createdAt).toLocaleDateString();
+    acc[date] = (acc[date] || 0) + order.total;
+    return acc;
+  }, {} as Record<string, number>);
+
+  const salesChartData = {
+    labels: Object.keys(salesByDate),
+    datasets: [
+      {
+        label: 'Sales (৳)',
+        data: Object.values(salesByDate),
+        borderColor: 'rgb(75, 192, 192)',
+        tension: 0.1,
+      },
+    ],
+  };
+
+  const orderStatusChartData = {
+    labels: Object.keys(ordersByStatus),
+    datasets: [
+      {
+        label: 'Orders by Status',
+        data: Object.values(ordersByStatus),
+        backgroundColor: [
+          'rgba(255, 99, 132, 0.5)',
+          'rgba(54, 162, 235, 0.5)',
+          'rgba(255, 206, 86, 0.5)',
+          'rgba(75, 192, 192, 0.5)',
+        ],
+      },
+    ],
+  };
+
   return (
     <Tabs defaultValue="products">
       <TabsList>
         <TabsTrigger value="products">Manage Products</TabsTrigger>
         <TabsTrigger value="orders">Manage Orders</TabsTrigger>
+        <TabsTrigger value="analytics">Analytics</TabsTrigger>
       </TabsList>
 
       <TabsContent value="products" className="mt-6">
@@ -245,6 +327,34 @@ export default function SellerDashboard() {
               </div>
             </Card>
           ))}
+        </div>
+      </TabsContent>
+
+      <TabsContent value="analytics" className="mt-6">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <Card className="p-6">
+            <h3 className="text-lg font-semibold mb-4">Sales Overview</h3>
+            <div className="space-y-4">
+              <div>
+                <p className="text-sm text-gray-500">Total Sales</p>
+                <p className="text-2xl font-bold">৳{totalSales.toLocaleString()}</p>
+              </div>
+              <div>
+                <p className="text-sm text-gray-500">Total Orders</p>
+                <p className="text-2xl font-bold">{totalOrders}</p>
+              </div>
+            </div>
+          </Card>
+
+          <Card className="p-6">
+            <h3 className="text-lg font-semibold mb-4">Order Status Distribution</h3>
+            <Bar data={orderStatusChartData} />
+          </Card>
+
+          <Card className="p-6 col-span-2">
+            <h3 className="text-lg font-semibold mb-4">Sales Over Time</h3>
+            <Line data={salesChartData} />
+          </Card>
         </div>
       </TabsContent>
     </Tabs>
