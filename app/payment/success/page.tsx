@@ -6,19 +6,45 @@ import { useStore } from '@/lib/store';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { CheckCircle } from 'lucide-react';
+import { toast } from 'sonner';
 
 export default function PaymentSuccessPage() {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const { createOrder, clearCart } = useStore();
+  const { currentUser, clearCart } = useStore();
 
   useEffect(() => {
+    const updateOrders = async () => {
+      try {
+        // Update orders status to paid
+        const response = await fetch('/api/orders/payment', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            userId: currentUser?.id,
+            status: 'paid'
+          }),
+        });
+
+        if (!response.ok) {
+          throw new Error('Failed to update order status');
+        }
+
+        clearCart();
+        toast.success('Payment successful! Your order has been confirmed.');
+      } catch (error) {
+        console.error('Error updating order status:', error);
+        toast.error('There was an issue confirming your order. Please contact support.');
+      }
+    };
+
     const sessionId = searchParams.get('session_id');
-    if (sessionId) {
-      createOrder();
-      clearCart();
+    if (sessionId && currentUser) {
+      updateOrders();
     }
-  }, [searchParams]);
+  }, [searchParams, currentUser, clearCart]);
 
   return (
     <div className="min-h-screen bg-gray-50 py-12">

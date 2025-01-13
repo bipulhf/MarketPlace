@@ -290,12 +290,11 @@ export const useStore = create<StoreState>()(
         }
       },
       createOrder: async () => {
-        const loadingToast = toast.loading('Creating order...');
+        const toastId = toast.loading('Creating order...');
         try {
           const state = get();
           if (!state.currentUser || !state.cart.length) {
-            toast.dismiss(loadingToast);
-            toast.error('Please login and add items to cart');
+            toast.error('Please login and add items to cart', { id: toastId });
             return false;
           }
 
@@ -334,13 +333,11 @@ export const useStore = create<StoreState>()(
             buyerOrders: [...orders, ...state.buyerOrders],
             cart: [] 
           }));
-          toast.dismiss(loadingToast);
-          toast.success('Orders created successfully!');
+          toast.success('Orders created successfully!', { id: toastId });
           return true;
         } catch (error) {
           console.error('Error creating orders:', error);
-          toast.dismiss(loadingToast);
-          toast.error('Error creating orders');
+          toast.error('Error creating orders', { id: toastId });
           return false;
         }
       },
