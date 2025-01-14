@@ -590,7 +590,7 @@ export default function SellerDashboard() {
               <div className="w-full aspect-square sm:aspect-[4/3]">
                 <Bar
                   data={{
-                    labels: ['Pending', 'Processing', 'Shipped', 'Delivered'],
+                    labels: ['Accepted', 'Processing', 'Shipped', 'Delivered'],
                     datasets: [
                       {
                         label: 'Orders',
