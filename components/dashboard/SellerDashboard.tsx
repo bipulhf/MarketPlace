@@ -171,6 +171,8 @@ export default function SellerDashboard() {
     }
 
     setIsLoading(true);
+    toast.loading('Updating stock...');
+    
     try {
       const response = await fetch('/api/products/stock', {
         method: 'PATCH',
@@ -188,9 +190,11 @@ export default function SellerDashboard() {
       }
 
       await fetchProducts();
+      toast.dismiss();
       toast.success('Stock updated successfully!');
     } catch (error) {
       console.error('Error updating stock:', error);
+      toast.dismiss();
       toast.error('Failed to update stock');
     } finally {
       setIsLoading(false);
@@ -440,12 +444,38 @@ export default function SellerDashboard() {
                             defaultValue={product.stockAmount}
                             onChange={(e) => {
                               const newAmount = parseInt(e.target.value);
+                              if (isNaN(newAmount)) {
+                                toast.error('Please enter a valid number');
+                                return;
+                              }
+                            }}
+                            id={`stock-input-${product.id}`}
+                          />
+                        </div>
+                        <DialogFooter>
+                          <DialogClose asChild>
+                            <Button variant="outline">Cancel</Button>
+                          </DialogClose>
+                          <Button 
+                            onClick={() => {
+                              const input = document.getElementById(`stock-input-${product.id}`) as HTMLInputElement;
+                              const newAmount = parseInt(input.value);
                               if (!isNaN(newAmount)) {
                                 handleUpdateStock(product.id, newAmount);
                               }
                             }}
-                          />
-                        </div>
+                            disabled={isLoading}
+                          >
+                            {isLoading ? (
+                              <>
+                                <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                                Updating...
+                              </>
+                            ) : (
+                              'Update Stock'
+                            )}
+                          </Button>
+                        </DialogFooter>
                       </DialogContent>
                     </Dialog>
                   </div>

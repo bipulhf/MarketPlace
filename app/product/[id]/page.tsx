@@ -8,10 +8,11 @@ import { Product } from '@/lib/types';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Separator } from '@/components/ui/separator';
-import { ShoppingCart, ArrowLeft } from 'lucide-react';
+import { ShoppingCart, ArrowLeft, AlertCircle } from 'lucide-react';
 import { toast } from 'sonner';
 import { randomDelay } from '@/lib/delay';
 import { Skeleton } from '@/components/ui/skeleton';
+import { Badge } from '@/components/ui/badge';
 
 export default function ProductPage() {
   const params = useParams();
@@ -22,6 +23,7 @@ export default function ProductPage() {
   const fetchProductDetails = useStore((state) => state.fetchProductDetails);
   const addToCart = useStore((state) => state.addToCart);
   const currentUser = useStore((state) => state.currentUser);
+  const cart = useStore((state) => state.cart);
 
   useEffect(() => {
     const loadProduct = async () => {
@@ -47,10 +49,24 @@ export default function ProductPage() {
     }
 
     if (!product) return;
+
+    if (product.stockAmount <= 0) {
+      toast.error('This product is out of stock');
+      return;
+    }
+
+    const currentCartItem = cart.find(item => item.productId === product.id);
+    const currentQuantity = currentCartItem?.quantity || 0;
+
+    if (currentQuantity + 1 > product.stockAmount) {
+      toast.error(`Only ${product.stockAmount} items available in stock`);
+      return;
+    }
     
     setIsAddingToCart(true);
     await randomDelay(500, 1000);
     addToCart(product, 1);
+    toast.success('Added to cart');
     setIsAddingToCart(false);
   };
 
@@ -99,41 +115,73 @@ export default function ProductPage() {
         <Card>
           <CardContent className="p-6">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-              <div className="aspect-square relative">
+              <div className="relative aspect-square">
                 <img
                   src={product.image}
                   alt={product.name}
                   className="object-cover w-full h-full rounded-lg"
                 />
+                {product.stockAmount <= 0 && (
+                  <div className="absolute inset-0 bg-black/50 flex items-center justify-center rounded-lg">
+                    <Badge variant="destructive" className="text-base">
+                      Out of Stock
+                    </Badge>
+                  </div>
+                )}
               </div>
 
-              <div>
-                <h1 className="text-3xl font-bold">{product.name}</h1>
-                <p className="text-2xl font-semibold mt-4">৳{product.price}</p>
-                
-                <Separator className="my-6" />
-                
-                <div className="space-y-4">
+              <div className="space-y-6">
+                <div>
+                  <h1 className="text-2xl font-bold mb-2">{product.name}</h1>
+                  <p className="text-2xl font-semibold text-primary">
+                    ৳{product.price.toFixed(2)}
+                  </p>
+                </div>
+
+                <div className="space-y-2">
                   <h2 className="text-lg font-semibold">Description</h2>
                   <p className="text-gray-600">{product.description}</p>
                 </div>
 
-                <div className="mt-8">
-                  <Button
-                    onClick={handleAddToCart}
-                    disabled={isAddingToCart}
-                    className="w-full"
-                  >
-                    {isAddingToCart ? (
-                      'Adding to Cart...'
-                    ) : (
-                      <>
-                        <ShoppingCart className="mr-2 h-4 w-4" />
-                        Add to Cart
-                      </>
+                <div className="space-y-2">
+                  <h2 className="text-lg font-semibold">Stock Information</h2>
+                  <div className="flex items-center space-x-2">
+                    <p className="text-gray-600">
+                      Available: {product.stockAmount} units
+                    </p>
+                    {product.stockAmount <= 5 && product.stockAmount > 0 && (
+                      <Badge variant="secondary">
+                        Low Stock
+                      </Badge>
                     )}
-                  </Button>
+                  </div>
                 </div>
+
+                <Separator />
+
+                <Button
+                  className="w-full"
+                  onClick={handleAddToCart}
+                  disabled={isAddingToCart || product.stockAmount <= 0}
+                  variant={product.stockAmount <= 0 ? "secondary" : "default"}
+                >
+                  {isAddingToCart ? (
+                    <>
+                      <Skeleton className="h-4 w-4 mr-2 rounded-full animate-spin" />
+                      Adding to Cart...
+                    </>
+                  ) : product.stockAmount <= 0 ? (
+                    <>
+                      <AlertCircle className="mr-2 h-4 w-4" />
+                      Out of Stock
+                    </>
+                  ) : (
+                    <>
+                      <ShoppingCart className="mr-2 h-4 w-4" />
+                      Add to Cart
+                    </>
+                  )}
+                </Button>
               </div>
             </div>
           </CardContent>
