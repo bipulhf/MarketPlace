@@ -50,6 +50,7 @@ model Product {
   price       Float
   description String
   image       String
+  stockAmount Int      @default(0)
   
   // Relations
   seller      User     @relation("SellerProducts", fields: [sellerId], references: [id])

@@ -49,6 +49,7 @@ interface NewProduct {
   name?: string;
   price?: number;
   description?: string;
+  stockAmount?: number;
 }
 
 interface Analytics {
@@ -68,6 +69,7 @@ interface Product {
   price: number;
   description: string;
   image: string;
+  stockAmount: number;
 }
 
 interface Order {
@@ -140,6 +142,7 @@ export default function SellerDashboard() {
             name: newProduct.name,
             price: Number(newProduct.price),
             description: newProduct.description || '',
+            stockAmount: Number(newProduct.stockAmount) || 0,
             sellerId: currentUser.id,
             image: imageUrl,
           }),
@@ -158,6 +161,39 @@ export default function SellerDashboard() {
       } finally {
         setIsLoading(false);
       }
+    }
+  };
+
+  const handleUpdateStock = async (productId: string, newStockAmount: number) => {
+    if (newStockAmount < 0) {
+      toast.error('Stock amount cannot be negative');
+      return;
+    }
+
+    setIsLoading(true);
+    try {
+      const response = await fetch('/api/products/stock', {
+        method: 'PATCH',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          productId,
+          stockAmount: newStockAmount,
+        }),
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to update stock');
+      }
+
+      await fetchProducts();
+      toast.success('Stock updated successfully!');
+    } catch (error) {
+      console.error('Error updating stock:', error);
+      toast.error('Failed to update stock');
+    } finally {
+      setIsLoading(false);
     }
   };
 
@@ -326,60 +362,41 @@ export default function SellerDashboard() {
                   Add Product
                 </Button>
               </DialogTrigger>
-              <DialogContent className="sm:max-w-[425px]">
+              <DialogContent>
                 <DialogHeader>
                   <DialogTitle>Add New Product</DialogTitle>
                 </DialogHeader>
-                <div className="space-y-4 py-4">
+                <div className="space-y-4">
                   <Input
                     placeholder="Product Name"
                     value={newProduct.name || ''}
-                    onChange={(e) =>
-                      setNewProduct({ ...newProduct, name: e.target.value })
-                    }
+                    onChange={(e) => setNewProduct({ ...newProduct, name: e.target.value })}
                   />
                   <Input
                     type="number"
                     placeholder="Price"
                     value={newProduct.price || ''}
-                    onChange={(e) =>
-                      setNewProduct({
-                        ...newProduct,
-                        price: parseFloat(e.target.value),
-                      })
-                    }
+                    onChange={(e) => setNewProduct({ ...newProduct, price: parseFloat(e.target.value) })}
+                  />
+                  <Input
+                    type="number"
+                    placeholder="Stock Amount"
+                    value={newProduct.stockAmount || ''}
+                    onChange={(e) => setNewProduct({ ...newProduct, stockAmount: parseInt(e.target.value) })}
                   />
                   <Input
                     placeholder="Description"
                     value={newProduct.description || ''}
-                    onChange={(e) =>
-                      setNewProduct({
-                        ...newProduct,
-                        description: e.target.value,
-                      })
-                    }
+                    onChange={(e) => setNewProduct({ ...newProduct, description: e.target.value })}
                   />
                 </div>
                 <DialogFooter>
                   <DialogClose asChild>
-                    <Button variant="outline" className="w-full sm:w-auto">Cancel</Button>
+                    <Button variant="outline">Cancel</Button>
                   </DialogClose>
-                  <Button
-                    onClick={handleAddProduct}
-                    disabled={isLoading || !newProduct.name || !newProduct.price}
-                    className="w-full sm:w-auto"
-                  >
-                    {isLoading ? (
-                      <>
-                        <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                        Adding...
-                      </>
-                    ) : (
-                      <>
-                        <Plus className="w-4 h-4 mr-2" />
-                        Add Product
-                      </>
-                    )}
+                  <Button onClick={handleAddProduct} disabled={isLoading}>
+                    {isLoading && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
+                    Add Product
                   </Button>
                 </DialogFooter>
               </DialogContent>
@@ -389,38 +406,66 @@ export default function SellerDashboard() {
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
             {products.map((product) => (
               <Card key={product.id} className="overflow-hidden">
-                <div className="aspect-square sm:aspect-video relative">
+                <div className="aspect-video relative">
                   <img
                     src={product.image}
                     alt={product.name}
-                    className="object-cover w-full h-full"
+                    className="absolute inset-0 w-full h-full object-cover"
                   />
-                  <div className="absolute top-2 right-2 space-x-2">
+                </div>
+                <CardContent className="p-4 space-y-2">
+                  <div className="flex justify-between items-start">
+                    <div>
+                      <h3 className="font-semibold">{product.name}</h3>
+                      <p className="text-sm text-gray-500">{product.description}</p>
+                    </div>
+                    <p className="font-bold">৳{product.price}</p>
+                  </div>
+                  <div className="flex items-center space-x-2">
+                    <p className="text-sm text-gray-500">Stock: {product.stockAmount}</p>
+                    <Dialog>
+                      <DialogTrigger asChild>
+                        <Button variant="outline" size="sm">
+                          Update Stock
+                        </Button>
+                      </DialogTrigger>
+                      <DialogContent>
+                        <DialogHeader>
+                          <DialogTitle>Update Stock Amount</DialogTitle>
+                        </DialogHeader>
+                        <div className="space-y-4">
+                          <Input
+                            type="number"
+                            placeholder="New Stock Amount"
+                            defaultValue={product.stockAmount}
+                            onChange={(e) => {
+                              const newAmount = parseInt(e.target.value);
+                              if (!isNaN(newAmount)) {
+                                handleUpdateStock(product.id, newAmount);
+                              }
+                            }}
+                          />
+                        </div>
+                      </DialogContent>
+                    </Dialog>
+                  </div>
+                  <div className="flex justify-end space-x-2">
                     <Button
-                      size="icon"
-                      variant="secondary"
+                      variant="outline"
+                      size="sm"
                       onClick={() => setEditingProduct(product)}
-                      className="w-8 h-8 sm:w-10 sm:h-10"
                     >
-                      <Edit className="w-4 h-4 sm:w-5 sm:h-5" />
+                      <Edit className="w-4 h-4" />
                     </Button>
                     <Button
-                      size="icon"
                       variant="destructive"
+                      size="sm"
                       onClick={() => handleDeleteProduct(product.id)}
-                      className="w-8 h-8 sm:w-10 sm:h-10"
                     >
-                      <Trash2 className="w-4 h-4 sm:w-5 sm:h-5" />
+                      <Trash2 className="w-4 h-4" />
                     </Button>
                   </div>
-                </div>
-                <div className="p-3 sm:p-4">
-                  <h3 className="font-semibold text-sm sm:text-base mb-1 sm:mb-2">{product.name}</h3>
-                  <p className="text-gray-600 text-xs sm:text-sm mb-2">{product.description}</p>
-                  <div className="flex justify-between items-center">
-                    <p className="font-bold text-sm sm:text-base">৳{product.price.toFixed(2)}</p>
-                  </div>
-                </div>
+                </CardContent>
               </Card>
             ))}
           </div>
@@ -589,7 +634,7 @@ export default function SellerDashboard() {
 
       {/* Edit Product Dialog */}
       <Dialog open={!!editingProduct} onOpenChange={(open) => !open && setEditingProduct(null)}>
-        <DialogContent className="sm:max-w-[425px]">
+        <DialogContent>
           <DialogHeader>
             <DialogTitle className="text-lg sm:text-xl">Edit Product</DialogTitle>
           </DialogHeader>

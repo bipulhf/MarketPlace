@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import prisma from '@/lib/prisma';
+import { CreateProductInput } from '@/lib/types';
 
 // Get all products or seller's products
 export async function GET(request: Request) {
@@ -32,16 +33,17 @@ export async function GET(request: Request) {
 // Create a new product
 export async function POST(request: Request) {
   try {
-    const body = await request.json();
-    const { name, price, description, image, sellerId } = body;
+    const body = await request.json() as CreateProductInput;
+    const { name, price, description, image, sellerId, stockAmount } = body;
 
     const product = await prisma.product.create({
       data: {
         name,
-        price,
+        price: Number(price),
         description,
         image,
-        sellerId
+        sellerId,
+        ...(stockAmount !== undefined ? { stockAmount: Number(stockAmount) } : {})
       }
     });
 
