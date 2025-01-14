@@ -38,7 +38,7 @@ A modern e-commerce platform built specifically for the SUST community. Live at 
 ## Tech Stack
 
 - **Frontend**
-  - Next.js 13+ with App Router
+  - Next.js 15 with App Router
   - TypeScript
   - Tailwind CSS
   - Shadcn UI Components
@@ -74,9 +74,12 @@ npm install
 
 3. Create a `.env` file in the root directory with the following:
 ```env
-DATABASE_URL="your_database_url"
-DIRECT_URL="your_direct_database_url"
-NEXT_PUBLIC_UNSPLASH_ACCESS_KEY=your_unsplash_api_key
+NEXT_PUBLIC_UNSPLASH_ACCESS_KEY=key
+NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY=key
+NEXT_PUBLIC_APP_URL=url
+STRIPE_SECRET_KEY=key
+DATABASE_URL=url
+DIRECT_URL=url
 ```
 
 4. Set up the database
@@ -116,34 +119,6 @@ npm run dev
 - Responsive images and cards
 - Optimized navigation for mobile devices
 
-## Demo Accounts
-
-For testing purposes, you can use these demo accounts:
-
-- **Buyer Account**
-  - Email: bipulhf@gmail.com
-  - Password: 1234
-
-- **Seller Account**
-  - Email: shifat@gmail.com
-  - Password: 1234
-
-- **Delivery Account**
-  - Email: delivery@gmail.com
-  - Password: 1234
-
 ## Live Demo
 
 Visit [sust-marketplace.vercel.app](https://sust-marketplace.vercel.app) to see the live application.
-
-## Contributing
-
-1. Fork the repository
-2. Create your feature branch (`git checkout -b feature/amazing-feature`)
-3. Commit your changes (`git commit -m 'Add some amazing feature'`)
-4. Push to the branch (`git push origin feature/amazing-feature`)
-5. Open a Pull Request
-
-## License
-
-This project is licensed under the MIT License - see the LICENSE file for details.
